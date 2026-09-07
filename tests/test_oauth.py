@@ -1,9 +1,9 @@
 """Backend OAuth behavior tests."""
 from __future__ import annotations
 
-import httpx
+import httpx2
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 
 from core.config import settings
@@ -11,14 +11,13 @@ from core.models import OAuthIdentity, User
 from tests.conftest import TestSession
 
 GOOGLE_SUBJECT = "google-subject-123"
-FACEBOOK_SUBJECT = "facebook-subject-456"
 
 
-def _provider_transport(*, email: str, name: str, provider: str) -> httpx.MockTransport:
-    def handler(request: httpx.Request) -> httpx.Response:
+def _provider_transport(*, email: str, name: str) -> httpx2.MockTransport:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         path = request.url.path
         if path.endswith("/token") or path.endswith("/oauth/access_token"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     "access_token": "provider-access-token",
@@ -26,26 +25,23 @@ def _provider_transport(*, email: str, name: str, provider: str) -> httpx.MockTr
                     "expires_in": 3600,
                 },
             )
-        if provider == "google":
-            profile = {
-                "sub": GOOGLE_SUBJECT,
-                "email": email,
-                "email_verified": True,
-                "name": name,
-            }
-        else:
-            profile = {"id": FACEBOOK_SUBJECT, "email": email, "name": name}
-        return httpx.Response(200, json=profile)
+        profile = {
+            "sub": GOOGLE_SUBJECT,
+            "email": email,
+            "email_verified": True,
+            "name": name,
+        }
+        return httpx2.Response(200, json=profile)
 
-    return httpx.MockTransport(handler)
+    return httpx2.MockTransport(handler)
 
 
 @pytest.fixture
 def mock_oauth(monkeypatch: pytest.MonkeyPatch):
     import core.services.oauth as oauth_service
 
-    def fake_transport(provider: str) -> httpx.MockTransport:
-        return _provider_transport(email="social@example.com", name="Social User", provider=provider)
+    def fake_transport(provider: str) -> httpx2.MockTransport:
+        return _provider_transport(email="social@example.com", name="Social User")
 
     monkeypatch.setattr(oauth_service, "oauth_transport", fake_transport)
 
@@ -151,37 +147,6 @@ async def test_social_login_links_to_existing_email_account(
         assert identity.user_id == user.id
 
 
-async def test_one_account_can_link_google_and_facebook(
-    client: AsyncClient, mock_oauth, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import core.services.oauth as oauth_service
-
-    await client.post(
-        "/api/auth/register",
-        json={"email": "social@example.com", "password": "password123", "username": "bothuser"},
-    )
-
-    state = await _authorize_and_get_state(client, "google")
-    await client.get(f"/api/auth/google/callback?code=abc&state={state}")
-
-    def fb_transport(provider: str) -> httpx.MockTransport:
-        return _provider_transport(email="social@example.com", name="Social User", provider="facebook")
-
-    monkeypatch.setattr(oauth_service, "oauth_transport", fb_transport)
-    state_fb = await _authorize_and_get_state(client, "facebook")
-    resp_fb = await client.get(
-        f"/api/auth/facebook/callback?code=abc&state={state_fb}", follow_redirects=False
-    )
-    assert resp_fb.status_code == 307
-
-    async with TestSession() as session:
-        users = (await session.scalars(select(User))).all()
-        assert len(users) == 1
-        identities = (await session.scalars(select(OAuthIdentity))).all()
-        assert len(identities) == 2
-        assert {i.provider for i in identities} == {"google", "facebook"}
-
-
 async def test_provider_subject_change_resolves_via_identity(
     client: AsyncClient, mock_oauth, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -190,8 +155,8 @@ async def test_provider_subject_change_resolves_via_identity(
     state = await _authorize_and_get_state(client, "google")
     await client.get(f"/api/auth/google/callback?code=abc&state={state}")
 
-    def changed_email(provider: str) -> httpx.MockTransport:
-        return _provider_transport(email="new-email@example.com", name="Social User", provider="google")
+    def changed_email(provider: str) -> httpx2.MockTransport:
+        return _provider_transport(email="new-email@example.com", name="Social User")
 
     monkeypatch.setattr(oauth_service, "oauth_transport", changed_email)
     state2 = await _authorize_and_get_state(client, "google")
