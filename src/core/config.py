@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     oauth_redirect_base: str = "http://localhost:5173"
+    backend_base_url: str = "http://localhost:8000"
 
 
 settings = Settings()

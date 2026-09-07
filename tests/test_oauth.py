@@ -55,8 +55,14 @@ async def _authorize_and_get_state(client: AsyncClient, provider: str) -> str:
 async def test_authorize_redirects_to_provider(client: AsyncClient) -> None:
     resp = await client.get("/api/auth/google/authorize", follow_redirects=False)
     assert resp.status_code == 307
-    assert resp.headers["location"].startswith("https://accounts.google.com/o/oauth2/v2/auth")
-    assert "state=" in resp.headers["location"]
+    location = resp.headers["location"]
+    assert location.startswith("https://accounts.google.com/o/oauth2/v2/auth")
+    assert "state=" in location
+    assert "redirect_uri=" in location
+    assert (
+        f"{settings.backend_base_url}/api/auth/google/callback"
+        in location.replace("+", "%20").replace("%3A", ":").replace("%2F", "/")
+    )
     set_cookie = resp.headers.get("set-cookie", "")
     assert "oauth_state=" in set_cookie
 

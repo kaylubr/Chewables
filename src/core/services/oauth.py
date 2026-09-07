@@ -174,7 +174,7 @@ def authorize_url(provider: str, state: str) -> str:
 
 def callback_url(provider: str) -> str:
     """Backend route the provider redirects to after consent."""
-    return f"{settings.oauth_redirect_base}/api/auth/{provider}/callback"
+    return f"{settings.backend_base_url}/api/auth/{provider}/callback"
 
 
 async def _fetch_profile(
