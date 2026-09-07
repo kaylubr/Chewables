@@ -22,8 +22,6 @@ class Settings(BaseSettings):
 
     google_client_id: str = ""
     google_client_secret: str = ""
-    facebook_client_id: str = ""
-    facebook_client_secret: str = ""
     oauth_redirect_base: str = "http://localhost:5173"
 
 

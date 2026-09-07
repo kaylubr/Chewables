@@ -16,8 +16,8 @@ describe('oauthAuthorizeUrl', () => {
 	});
 
 	it('includes the next path when given', () => {
-		const url = oauthAuthorizeUrl('facebook', '/photos');
-		expect(url).toBe('http://localhost:8000/api/auth/facebook/authorize?next=%2Fphotos');
+		const url = oauthAuthorizeUrl('google', '/photos');
+		expect(url).toBe('http://localhost:8000/api/auth/google/authorize?next=%2Fphotos');
 	});
 
 	it('omits next when absent', () => {

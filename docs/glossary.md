@@ -17,8 +17,8 @@ Shared vocabulary for the Chewables photobooth. Terms here mean exactly what thi
 
 - **User** — The database account: id, unique username, email, password hash (nullable for social-only accounts), created_at. A user holds an email/password credential and/or linked OAuth identities (ADR 0005, ADR 0008).
 - **Stateless signed token** — The auth credential issued at login (ADR 0001): self-validating, carries the user id and expiry, no session table, short-lived, no refresh token in the initial version.
-- **OAuth provider** — Google or Facebook; the identity provider a user signs in through (ADR 0008). Providers are config-driven in a registry.
-- **Provider subject** — The provider's stable identifier for an account (Google `sub` / Facebook `id`). Unique per provider.
+- **OAuth provider** — Google; the identity provider a user signs in through (ADR 0008). Providers are config-driven in a registry.
+- **Provider subject** — The provider's stable identifier for an account (Google `sub`). Unique per provider.
 - **OAuth identity** — One row in `oauth_identities` linking a user to a provider account (provider + subject). A user may hold several, at most one per provider (ADR 0008).
 - **Account linking** — Attaching a new OAuth identity to an existing user whose verified email matches the provider profile (ADR 0008). Without an email match, a social login creates a new user.
 - **State nonce** — The signed httpOnly cookie set at OAuth authorize and required back at the callback; the anti-CSRF check of the OAuth flow (ADR 0008).

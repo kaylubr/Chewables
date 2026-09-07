@@ -13,7 +13,7 @@ Registration was originally scoped as email + password. The product now asks for
 - Registration fields: email, username, password, confirm-password (schema-validated; confirm-password is a client + schema check, not a stored field). Password is hashed with an established algorithm (argon2 via pwdlib — already a dependency) — never plaintext.
 - **One `User` table** with optional OAuth columns (e.g. `oauth_provider`, `oauth_subject`) rather than a separate linking table. *Superseded by ADR 0008:* OAuth identities live in a separate `oauth_identities` table so one account can link multiple providers.
 - **No automatic identity linking.** If a social login's verified email matches an existing password account, the user logs in with the password; the accounts are not silently merged. *Superseded by ADR 0008:* a social login whose verified email matches an existing account links a new identity to that account.
-- **Google and Facebook login ship as a separate later stage**, after core email/password auth is stable. The schema may carry the OAuth columns from the start, but the flows are not built early.
+- **Google and Facebook login ship as a separate later stage**, after core email/password auth is stable. The schema may carry the OAuth columns from the start, but the flows are not built early. *Facebook was dropped before shipping; social login is Google-only (see ADR 0008).*
 - Multiple simultaneous sessions per user are allowed (see ADR 0001).
 
 ## Consequences

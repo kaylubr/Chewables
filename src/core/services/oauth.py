@@ -18,7 +18,7 @@ from core.config import settings
 from core.models import OAuthIdentity, User
 from core.security import create_access_token
 
-PROVIDERS = ("google", "facebook")
+PROVIDERS = ("google",)
 
 STATE_COOKIE_NAME = "oauth_state"
 STATE_MAX_AGE_SECONDS = 10 * 60  # 10 minutes
@@ -32,14 +32,6 @@ PROVIDER_CONFIGS: dict[str, dict] = {
         "token_url": "https://oauth2.googleapis.com/token",
         "profile_url": "https://openidconnect.googleapis.com/v1/userinfo",
         "scope": "openid email profile",
-    },
-    "facebook": {
-        "client_id": "facebook_client_id",
-        "client_secret": "facebook_client_secret",
-        "authorize_url": "https://www.facebook.com/v19.0/dialog/oauth",
-        "token_url": "https://graph.facebook.com/v19.0/oauth/access_token",
-        "profile_url": "https://graph.facebook.com/me?fields=id,name,email",
-        "scope": "email public_profile",
     },
 }
 
@@ -208,10 +200,7 @@ async def _fetch_profile(
         raise OAuthError("profile fetch failed")
     data = resp.json()
 
-    if provider == "google":
-        subject = str(data.get("sub") or "")
-    else:
-        subject = str(data.get("id") or "")
+    subject = str(data.get("sub") or "")
     if not subject:
         raise OAuthError("provider returned no subject")
 
