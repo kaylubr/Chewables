@@ -1,6 +1,6 @@
 # ADR 0001: Stateless signed-token authentication
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0010 (Node/Express + Better-Auth cookie sessions)
 - **Date:** 2026-09-05
 
 ## Context

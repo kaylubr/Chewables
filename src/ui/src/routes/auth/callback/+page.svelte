@@ -2,20 +2,18 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/auth/store.svelte';
-	import { parseOAuthCallback } from '$lib/auth/oauth';
 
 	let error = $state<string | null>(null);
 
-	onMount(() => {
-		const parsed = parseOAuthCallback(window.location.href);
-		if (!parsed) {
+	onMount(async () => {
+		try {
+			await auth.ensureSession();
+		} catch {
 			error = 'Sign-in did not complete. Please try again.';
 			return;
 		}
-		auth.setSession(parsed.token, parsed.user);
-		// Clean the fragment/query out of the URL before redirecting.
-		window.history.replaceState({}, '', '/auth/callback');
-		goto(parsed.next, { replaceState: true });
+		const next = new URLSearchParams(window.location.search).get('next');
+		goto(next && next.startsWith('/') ? next : '/photos', { replaceState: true });
 	});
 </script>
 

@@ -33,10 +33,10 @@
 			showSignInPrompt = true;
 			return;
 		}
-		if (!resultUrl || !frame || !auth.token) return;
+		if (!resultUrl || !frame) return;
 		saving = true;
 		try {
-			await api.uploadPhoto(auth.token, frame.id, dataUrlToBlob(resultUrl));
+			await api.uploadPhoto(frame.id, dataUrlToBlob(resultUrl));
 			booth.session.state = 'completed';
 			goto('/photos?justSaved=1');
 		} catch (e) {

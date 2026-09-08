@@ -1,6 +1,6 @@
 # ADR 0008: OAuth social login with Google
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0010 (Node/Express + Better-Auth cookie sessions)
 - **Date:** 2026-09-06
 
 ## Context

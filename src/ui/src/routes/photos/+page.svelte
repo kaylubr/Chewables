@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { api, ApiError, type SavedPhoto } from '$lib/api/client';
+	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
+	import type { SavedPhoto } from '@chewable/shared';
 
 	type DisplayPhoto = SavedPhoto & { displayUrl?: string };
 
@@ -13,15 +14,14 @@
 
 	async function load() {
 		error = null;
-		const token = auth.token;
-		if (!auth.isAuthenticated || !token) return;
+		if (!auth.isAuthenticated) return;
 		loading = true;
 		try {
-			const data = await api.listPhotos(token);
+			const data = await api.listPhotos();
 			photos = await Promise.all(
 				data.map(async (p) => {
 					try {
-						const { url } = await api.photoUrl(token, p.id);
+						const { url } = await api.photoUrl(p.id);
 						return { ...p, displayUrl: url };
 					} catch {
 						return { ...p, displayUrl: undefined };
@@ -36,11 +36,10 @@
 	}
 
 	async function remove(id: string) {
-		const token = auth.token;
-		if (!token) return;
+		if (!auth.isAuthenticated) return;
 		deleting = id;
 		try {
-			await api.deletePhoto(token, id);
+			await api.deletePhoto(id);
 			photos = photos.filter((p) => p.id !== id);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Could not delete the photo.';
@@ -88,7 +87,7 @@
 					{/if}
 					<figcaption>
 						<span>
-							{photo.frame} · {new Date(photo.created_at).toLocaleDateString()}
+							{photo.frame} · {new Date(photo.createdAt).toLocaleDateString()}
 						</span>
 						<button
 							type="button"

@@ -1,10 +1,13 @@
 /**
- * Minimal backend API client.
+ * Backend API client for the SvelteKit frontend.
  *
- * The photobooth guest flow never calls this — it is only used for
- * authentication and saving photos to the user's gallery.
+ * Auth is cookie-session based (Better-Auth): the browser sends the session
+ * cookie on every request via `credentials: 'include'`, and the current user
+ * is read from GET /api/auth/me. Config/contract types come from the shared
+ * `@chewable/shared` package so backend and frontend stay in sync.
  */
-import { PUBLIC_API_BASE } from "$env/static/public";
+import { PUBLIC_API_BASE } from '$env/static/public';
+import type { AuthUser, SavedPhoto } from '@chewable/shared';
 
 export class ApiError extends Error {
   status: number;
@@ -17,6 +20,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${PUBLIC_API_BASE}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       ...(init.body instanceof FormData
         ? {}
@@ -38,61 +42,59 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
-export interface AuthUser {
-	id: string;
-	email: string;
-	username: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  user: AuthUser;
-}
-
-export interface SavedPhoto {
-  id: string;
-  frame: string;
-  storage_key: string;
-  created_at: string;
-}
+const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
 
 export const api = {
-  register: (email: string, username: string, password: string) =>
-    request<TokenResponse>("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({ email, username, password }),
-    }),
-  login: (username: string, password: string) =>
-    request<TokenResponse>("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    }),
-  me: (token: string) =>
-    request<AuthUser>("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  uploadPhoto: (token: string, frame: string, blob: Blob) => {
-    const form = new FormData();
-    form.append("frame", frame);
-    form.append("file", blob, `chewables-${frame.toLowerCase()}.webp`);
-    return request<SavedPhoto>("/api/photos", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-  },
-  listPhotos: (token: string) =>
-    request<SavedPhoto[]>("/api/photos", {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  photoUrl: (token: string, id: string) =>
-    request<{ url: string }>(`/api/photos/${id}/url`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  deletePhoto: (token: string, id: string) =>
-    request<void>(`/api/photos/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }),
+	/** Current user from the session cookie, or null when not authenticated. */
+	me: async (): Promise<AuthUser | null> => {
+		try {
+			return await request<AuthUser>("/api/auth/me");
+		} catch (error) {
+			if (error instanceof ApiError && error.status === 401) return null;
+			throw error;
+		}
+	},
+	register: (email: string, username: string, password: string) => {
+		// Better-Auth sign-up endpoint; it sets the session cookie itself.
+		return request<AuthUser>("/api/auth/sign-up/email", {
+			method: "POST",
+			body: JSON.stringify({ email, password, name: username }),
+		});
+	},
+	login: (usernameOrEmail: string, password: string) => {
+		// Sign in by the username handle (ADR 0005). The backend resolves the
+		// username to its account email before delegating to Better-Auth.
+		if (USERNAME_PATTERN.test(usernameOrEmail)) {
+			return request<AuthUser>("/api/auth/login", {
+				method: "POST",
+				body: JSON.stringify({ username: usernameOrEmail, password }),
+			});
+		}
+		return request<AuthUser>("/api/auth/sign-in/email", {
+			method: "POST",
+			body: JSON.stringify({ email: usernameOrEmail, password }),
+		});
+	},
+	logout: () => {
+		return request<void>("/api/auth/sign-out", { method: "POST" });
+	},
+	uploadPhoto: (frame: string, blob: Blob) => {
+		const form = new FormData();
+		form.append("frame", frame);
+		form.append("file", blob, `chewables-${frame.toLowerCase()}.webp`);
+		return request<SavedPhoto>("/api/photos", {
+			method: "POST",
+			body: form,
+		});
+	},
+	listPhotos: () =>
+		request<SavedPhoto[]>("/api/photos", {
+			credentials: "include",
+		}),
+	photoUrl: (id: string) =>
+		request<{ url: string }>(`/api/photos/${id}/url`),
+	deletePhoto: (id: string) =>
+		request<void>(`/api/photos/${id}`, {
+			method: "DELETE",
+		}),
 };

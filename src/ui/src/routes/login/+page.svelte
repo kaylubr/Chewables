@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
-	import { oauthAuthorizeUrl } from '$lib/auth/oauth';
+	import { googleSignInUrl } from '$lib/auth/oauth';
 
 	let username = $state('');
 	let password = $state('');
@@ -26,8 +26,8 @@
 		error = null;
 		submitting = true;
 		try {
-			const res = await api.login(username, password);
-			auth.setSession(res.access_token, res.user);
+			const user = await api.login(username, password);
+			auth.setUser(user);
 			afterLogin();
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Could not sign in. Please retry.';
@@ -49,10 +49,11 @@
 		<p class="error" role="alert">
 			Could not sign in with that provider. Please try again or use email.
 		</p>
+		<p>{oauthError}</p>
 	{/if}
 
 	<div class="social">
-		<a class="social-btn" href={oauthAuthorizeUrl('google', nextParam())}>
+		<a class="social-btn" href={googleSignInUrl(nextParam())}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
 				<!-- Icon from Material Icon Theme by Material Extensions - https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE -->
 				<g fill="none" fill-rule="evenodd" clip-rule="evenodd">

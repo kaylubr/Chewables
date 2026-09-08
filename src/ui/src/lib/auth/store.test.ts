@@ -16,33 +16,27 @@ describe('auth store', () => {
 
 	it('starts unauthenticated', () => {
 		expect(auth.isAuthenticated).toBe(false);
-		expect(auth.token).toBeNull();
 		expect(auth.user).toBeNull();
 	});
 
-	it('setSession makes the user authenticated and persists', () => {
-		auth.setSession('token-abc', U1);
+	it('setUser makes the user authenticated', () => {
+		auth.setUser(U1);
 		expect(auth.isAuthenticated).toBe(true);
-		expect(auth.token).toBe('token-abc');
 		expect(auth.user?.email).toBe('a@b.com');
 		expect(auth.user?.username).toBe('alice');
-		expect(localStorage.getItem('chewables.token')).toBe('token-abc');
-		expect(localStorage.getItem('chewables.user')).toContain('a@b.com');
 	});
 
-	it('clear signs the user out and removes persistence', () => {
-		auth.setSession('token-abc', U1);
+	it('clear signs the user out', () => {
+		auth.setUser(U1);
 		auth.clear();
 		expect(auth.isAuthenticated).toBe(false);
-		expect(auth.token).toBeNull();
-		expect(localStorage.getItem('chewables.token')).toBeNull();
+		expect(auth.user).toBeNull();
 	});
 
-	it('persists the session so a reload can restore it', () => {
-		auth.setSession('token-xyz', U2);
-		const storedToken = localStorage.getItem('chewables.token');
-		const storedUser = localStorage.getItem('chewables.user');
-		expect(storedToken).toBe('token-xyz');
-		expect(JSON.parse(storedUser!)).toEqual(U2);
+	it('swapping to a new user replaces the previous ones', () => {
+		auth.setUser(U1);
+		auth.setUser(U2);
+		expect(auth.user?.username).toBe('bob');
+		expect(auth.isAuthenticated).toBe(true);
 	});
 });

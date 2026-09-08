@@ -1,27 +1,17 @@
-# ---- Python / uv ----
-.venv/
-__pycache__/
-*.py[codz]
-*$py.class
-*.so
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.coverage
-.coverage.*
-htmlcov/
-build/
-dist/
-*.egg-info/
-.eggs/
-
 # ---- Environment ----
 .env
 .env.*
 !.env.example
 
-# ---- Node / SvelteKit ----
+# ---- Node / npm ----
 node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# ---- Frontend (SvelteKit) ----
+src/ui/.svelte-kit/
+src/ui/build/
 
 # ---- Local tooling ----
 .commandcode/

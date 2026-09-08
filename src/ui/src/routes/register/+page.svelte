@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
-	import { oauthAuthorizeUrl } from '$lib/auth/oauth';
+	import { googleSignInUrl } from '$lib/auth/oauth';
 
 	let email = $state('');
 	let username = $state('');
@@ -30,8 +30,8 @@
 		submitting = true;
 		try {
 			const res = await api.register(email, username, password);
-			auth.setSession(res.access_token, res.user);
-			goto('/photos');
+					auth.setUser(res);
+					goto('/photos');
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Could not create the account. Please retry.';
 		} finally {
@@ -49,7 +49,7 @@
 	<p class="sub">Accounts are only for saving photos to your gallery.</p>
 
 	<div class="social">
-		<a class="social-btn" href={oauthAuthorizeUrl('google', nextParam())}>
+		<a class="social-btn" href={googleSignInUrl(nextParam())}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
 				<!-- Icon from Material Icon Theme by Material Extensions - https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE -->
 				<g fill="none" fill-rule="evenodd" clip-rule="evenodd">
