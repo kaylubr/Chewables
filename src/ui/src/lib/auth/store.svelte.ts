@@ -15,8 +15,9 @@ class AuthStore {
 		return this.user !== null;
 	}
 
-	async ensureSession() {
+	async ensureSession(): Promise<AuthUser | null> {
 		this.user = await api.me();
+		return this.user;
 	}
 
 	setUser(user: AuthUser) {

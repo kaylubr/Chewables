@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
-	import { googleSignInUrl } from '$lib/auth/oauth';
+	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
 
 	let username = $state('');
 	let password = $state('');
@@ -11,6 +11,7 @@
 	let submitting = $state(false);
 	let googlePending = $state(false);
 	let googleError = $state<string | null>(null);
+	let googleFlow: GoogleAuthController | null = null;
 
 	const oauthError = $derived(page.url.searchParams.get('oauth_error'));
 
@@ -28,13 +29,26 @@
 		if (googlePending) return;
 		googleError = null;
 		googlePending = true;
-		try {
-			const url = await googleSignInUrl(nextParam());
-			window.location.assign(url);
-		} catch {
-			googleError = 'Could not start Google sign-in. Please retry.';
-			googlePending = false;
+		googleFlow = startGoogleSignIn(nextParam());
+		const outcome = await googleFlow.result;
+		googleFlow = null;
+		if (outcome.status === 'success') {
+			auth.setUser(outcome.user);
+			afterLogin();
+			return;
 		}
+		googlePending = false;
+		if (outcome.status === 'blocked') {
+			window.location.assign(outcome.url);
+			return;
+		}
+		if (outcome.status === 'error') {
+			googleError = outcome.message;
+		}
+	}
+
+	function cancelGoogle() {
+		googleFlow?.cancel();
 	}
 
 	async function submit() {
@@ -79,7 +93,7 @@
 					<path fill="#43a047" d="M4.255 9.322q1.23 3.057 4.51 2.854a3.94 3.94 0 0 0 1.718-.626q1.148.812 2.202 1.74a6.62 6.62 0 0 1-4.027 1.684a6.4 6.4 0 0 1-1.02 0Q3.82 14.524 2 11.116z" opacity=".993"/>
 				</g>
 			</svg>
-			<span>{googlePending ? 'Redirecting to Google…' : 'Continue with Google'}</span>
+			<span>Continue with Google</span>
 		</button>
 	</div>
 
@@ -106,6 +120,16 @@
 		No account? <a href="/register">Create one</a>
 	</p>
 </main>
+
+{#if googlePending}
+	<div class="modal-backdrop">
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="googleAuthTitle">
+			<span class="spinner" aria-hidden="true"></span>
+			<p id="googleAuthTitle" class="modal-text">Connecting your Google account…</p>
+			<button type="button" class="modal-cancel" onclick={cancelGoogle}>Cancel</button>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.auth-page {
@@ -218,6 +242,59 @@
 		margin-top: 1.25rem;
 		font-size: 0.95rem;
 		color: var(--ink-soft);
+	}
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		background: rgb(0 0 0 / 0.45);
+		z-index: 50;
+		padding: 1rem;
+	}
+	.modal {
+		display: grid;
+		justify-items: center;
+		gap: 0.75rem;
+		padding: 1.75rem 2rem;
+		border: 1px solid var(--line-strong);
+		border-radius: 0.75rem;
+		background: var(--surface);
+		color: var(--ink);
+		text-align: center;
+		box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+		font-family: var(--font-ui);
+	}
+	.spinner {
+		width: 2rem;
+		height: 2rem;
+		border: 3px solid var(--line);
+		border-top-color: var(--ember);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	.modal-text {
+		margin: 0;
+		font-size: var(--text-base);
+		font-weight: 600;
+	}
+	.modal-cancel {
+		background: none;
+		border: none;
+		padding: 0.25rem 0.5rem;
+		color: var(--ink-soft);
+		font-family: inherit;
+		font-size: var(--text-sm);
+		cursor: pointer;
+		text-decoration: underline;
+	}
+	.modal-cancel:hover {
+		color: var(--ember);
 	}
 	@media (pointer: coarse) {
 		input {
