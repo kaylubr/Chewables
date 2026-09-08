@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import brand from '$lib/assets/brand.svg';
 	import favicon from '$lib/assets/favicon.svg';
 	import { auth } from '$lib/auth/store.svelte';
 	import "$lib/css/fonts.css"
@@ -39,7 +40,7 @@
 <header class="topbar">
 	<div class="bar-inner">
 		<a href="/" class="brand">
-			Chewables
+			<img class="brand-mark" src={brand} alt="Chewables home" />
 		</a>
 		<div class="bar-right">
 			<nav>
@@ -228,16 +229,15 @@
 	.brand {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.55rem;
-		font-family: var(--font-display);
-		font-weight: 750;
-		font-size: 2rem;
-		letter-spacing: -0.01em;
-		color: #fff;
 		text-decoration: none;
 	}
-	.brand:hover {
-		color: #fff;
+	.brand-mark {
+		display: block;
+		height: 10vh;
+		width: auto;
+	}
+	.brand:hover .brand-mark {
+		opacity: 0.9;
 	}
 	nav {
 		display: flex;
@@ -413,8 +413,8 @@
 		.bar-inner {
 			padding-inline: 1rem;
 		}
-		.brand {
-			font-size: 1.2rem;
+		.brand-mark {
+			height: 2rem;
 		}
 	}
 	@media (pointer: coarse) {
