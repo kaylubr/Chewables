@@ -42,8 +42,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
-
 export const api = {
 	/** Current user from the session cookie, or null when not authenticated. */
 	me: async (): Promise<AuthUser | null> => {
@@ -55,24 +53,19 @@ export const api = {
 		}
 	},
 	register: (email: string, username: string, password: string) => {
-		// Better-Auth sign-up endpoint; it sets the session cookie itself.
-		return request<AuthUser>("/api/auth/sign-up/email", {
+		// Our register route creates the user with the username handle (ADR
+		// 0005) and starts a session via Better-Auth.
+		return request<AuthUser>("/api/auth/register", {
 			method: "POST",
-			body: JSON.stringify({ email, password, name: username }),
+			body: JSON.stringify({ email, username, password }),
 		});
 	},
 	login: (usernameOrEmail: string, password: string) => {
-		// Sign in by the username handle (ADR 0005). The backend resolves the
+		// Sign in by username handle (ADR 0005); the backend resolves the
 		// username to its account email before delegating to Better-Auth.
-		if (USERNAME_PATTERN.test(usernameOrEmail)) {
-			return request<AuthUser>("/api/auth/login", {
-				method: "POST",
-				body: JSON.stringify({ username: usernameOrEmail, password }),
-			});
-		}
-		return request<AuthUser>("/api/auth/sign-in/email", {
+		return request<AuthUser>("/api/auth/login", {
 			method: "POST",
-			body: JSON.stringify({ email: usernameOrEmail, password }),
+			body: JSON.stringify({ username: usernameOrEmail, password }),
 		});
 	},
 	logout: () => {

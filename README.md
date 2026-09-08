@@ -20,14 +20,16 @@ A privacy-conscious photobooth web app. Guests can use the full experience — f
 ```
 src/core/   Express backend (npm workspace @chewable/core)
   index.ts         Bootstrap only: start the listener
-  app.ts           App wiring only: middleware, routes, error handlers
+  app.ts           App wiring only: middleware, routes, global error handler
   config.ts        Centralized env config (single import; no process.env elsewhere)
-  db/              Drizzle client + schema (users, photos, sessions, accounts)
-  domains/         DDD modules: auth, photos (controller -> service -> repo)
-  adapters/storage/ S3-compatible storage seam (MinIO in dev)
-  lib/frames.ts    Supported frame identifier vocabulary (backend validation)
-  tests/           Vitest + Supertest suite
-src/shared/ Shared TS contract types (npm workspace @chewable/shared)
+  db/              Table definitions, one file per table + client (db/index.ts)
+  types/           Backend-only domain types (one file per concept)
+  lib/             Shared helpers and the frame vocabulary (frames.ts)
+  adapters/        Boundary adapters (storage/ = S3-compatible seam, MinIO in dev)
+  auth/            Auth domain: routes, controller, service, repo, schema, tests
+  photos/          Photos domain: routes, controller, service, repo, schema, tests
+  utils/           Cross-cutting utilities, including the shared test harness
+src/shared/ Shared contract types used by both backend and frontend (@chewable/shared)
 src/ui/     SvelteKit frontend (npm workspace @chewable/ui)
   src/lib/frames/         Frame types + centralized frame registry
   src/lib/photobooth/     Booth session state machine, capture controller, composition

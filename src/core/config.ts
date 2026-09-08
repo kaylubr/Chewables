@@ -1,13 +1,8 @@
-/**
- * Centralized environment configuration.
- *
- * This is the only module allowed to read process.env. Every other file
- * imports the typed `config` object below. Values are read once at import
- * time; required vars throw on a missing/invalid value rather than
- * allowing a misconfigured server to boot.
- */
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 export const APP_ENVS = {
 	production: 'production',
@@ -41,7 +36,11 @@ function parseAppEnv(raw: string | undefined): AppEnv {
 }
 
 const env = parseAppEnv(process.env.NODE_ENV);
-const databaseUrl = requireEnv('DATABASE_URL', process.env.DATABASE_URL);
+
+const databaseUrl =
+	env === APP_ENVS.testing
+		? requireEnv('TEST_DATABASE_URL', process.env.TEST_DATABASE_URL)
+		: requireEnv('DATABASE_URL', process.env.DATABASE_URL);
 
 export const config = {
 	env,
@@ -53,7 +52,6 @@ export const config = {
 
 	databaseUrl,
 
-	/** Object-storage (S3-compatible) settings — MinIO in local dev. */
 	s3: {
 		endpointUrl: process.env.S3_ENDPOINT_URL ?? 'http://localhost:9000',
 		accessKey: process.env.S3_ACCESS_KEY ?? '',
@@ -62,20 +60,12 @@ export const config = {
 		region: process.env.S3_REGION ?? 'us-east-1',
 	},
 
-	/**
-	 * Auth settings. Sessions are managed by Better-Auth via an httpOnly,
-	 * signed cookie. The cookie's security flags are environment-driven:
-	 * dev runs on plain HTTP across origins (SPA on 5173, API on 8000), so
-	 * secure is off and CORS allows the dev origin; prod is same-origin over
-	 * TLS, so secure is on and no cross-origin CORS is needed.
-	 */
 	auth: {
 		secret: requireEnv('AUTH_SECRET', process.env.AUTH_SECRET),
 		session: {
 			cookieName: 'chewables.session',
 			sameSite: 'lax' as const,
 			secure: env === APP_ENVS.production,
-			// 7 days by default, matching the previous JWT expiry default.
 			expiresIn: numberFromEnv('SESSION_EXPIRES_IN', process.env.SESSION_EXPIRES_IN, 60 * 60 * 24 * 7),
 		},
 		google: {
@@ -84,14 +74,12 @@ export const config = {
 		},
 	},
 
-	/** OAuth redirect destinations. Better-Auth handles the callback itself. */
 	oauth: {
 		redirectBase: process.env.OAUTH_REDIRECT_BASE ?? 'http://localhost:5173',
 		backendBaseUrl: process.env.BACKEND_BASE_URL ?? 'http://localhost:8000',
 	},
 
-	/** CORS origin(s): dev allows the Vite dev server; prod is same-origin. */
 	corsOrigin: env === APP_ENVS.production ? undefined : process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-} as const;
+};
 
 export type AppConfig = typeof config;

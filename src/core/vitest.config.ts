@@ -6,13 +6,11 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: 'node',
-		include: ['tests/**/*.test.ts'],
-		globalSetup: './tests/global-setup.ts',
-		setupFiles: ['./tests/setup.ts'],
+		include: ['auth/**/*.test.ts', 'photos/**/*.test.ts'],
+		globalSetup: './utils/test/global-setup.ts',
+		setupFiles: ['./utils/test/setup.ts'],
 		testTimeout: 20000,
 		hookTimeout: 30000,
-		// Files share a single test database; run them serially so their
-		// per-file truncates don't race each other's inserts.
 		fileParallelism: false,
 	},
 });

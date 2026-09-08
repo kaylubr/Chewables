@@ -7,13 +7,17 @@ A privacy-conscious photobooth web app. Guests use the full experience (frame se
 ## Code Style Guidelines
 
 - One purpose per file, no giant utility or catch-all modules.
-- `app.ts` is wiring only (app creation, middleware, route mounting, error handlers) — never endpoint logic.
-- Routes stay thin: validate input → authenticate/authorize → call a service → return response. No DB or storage internals in route handlers.
-- Business logic lives in the domain layer (`domains/*/*.service.ts`), not in routes or DB schema.
-- Layering within a domain mirrors DDD: `*.controller.ts` (HTTP) → `*.service.ts` (business logic) → `*.repo.ts` (data access). See `src/core/domains/`.
+- **Domain-oriented modular monolith.** Organize around business domains, not technical layers. Each top-level domain folder (`src/core/auth/`, `src/core/photos/`) owns its routes, controllers, services, validation, queries/repositories, and tests. Cross-cutting concerns (config, error handling, auth middleware, logging, db client, shared types, test harness) live outside the domains.
+- `app.ts` is wiring only (app creation, middleware, route mounting, error handlers) — never endpoint logic. `index.ts` only starts the listener.
+- HTTP concerns stay in controllers; business rules live in services; database access stays behind a query/repository boundary (repo files). Domains communicate through their public services/interfaces — never reach into another domain's internals.
+- Prefer plain functions and dependency injection over unnecessary classes.
+- Validate input at the application boundary (zod schemas in `*.schema.ts`, separate from types) before business logic executes.
+- Keep database/storage details from leaking into the rest of the application.
+- Avoid unnecessary abstraction or layering: introduce a service, repo, or utility boundary only when it provides a meaningful separation of responsibility.
+- Favor simple, readable code over architectural ceremony. Start as a modular monolith — no microservices unless there is a concrete operational reason.
 - Centralize env config in `src/core/config.ts`; never call `process.env.*` outside it. Required vars throw at boot.
 - Frontend frame logic lives in one centralized `FrameDefinition` config — capture logic only needs `photoCount`; composition reads the full definition.
-- Shared wire types between backend and frontend live in `src/shared` and are imported from `@chewable/shared` on both sides.
+- Backend-only types live in `src/core/types/`. Types shared with the frontend (or a frontend type that already exists) go in `src/shared` and are imported from `@chewable/shared` on both sides.
 - Never trust a client-supplied user ID — the server always derives the current user from the session.
 - Git commits are atomic: one logical change per commit. No "update backend" / "fix stuff".
 - Commit messages are plain: no `Co-authored-by` or other attribution trailers appended by the assistant, normal commits only.
@@ -25,13 +29,13 @@ A privacy-conscious photobooth web app. Guests use the full experience (frame se
 - **Auth is Better-Auth cookie sessions** (ADR 0010 supersedes ADR 0001/0008): email/password + Google OAuth handled by Better-Auth; no bearer token stored in the browser.
 - **No persistent Session model of our own** unless a real need shows up. Guest photobooth state lives entirely in frontend state.
 - **Guest privacy:** captured images and the composed result stay client-side. Never create a DB record just because someone opened the photobooth. Never upload guest photos unless the user actively chooses to save.
-- **Storage:** object storage holds images; Postgres holds only metadata + `storage_key`. Backend generates storage keys (e.g. `users/{user_id}/photos/{photo_id}.webp`) — never let the client choose the path. Save/delete ordering follows ADR 0006 (object first, then row on create; row first, then object on delete).
+- **Storage:** object storage holds images; Postgres holds only metadata + `storageKey`. Backend generates storage keys (e.g. `user/{userId}/photos/{photoId}.webp`) — never let the client choose the path. Save/delete ordering follows ADR 0006 (object first, then row on create; row first, then object on delete).
 - **Encryption:** normal secure transport/auth/storage for now. Client-side encryption (server never holds the key) is Stage 19, after the core app is stable — don't build or claim it early.
 
 ## Common Workflows
 
 - Start local services: `docker compose up -d`
-- Backend reads `DATABASE_URL` from `.env` (via `src/core/config.ts`), never hardcode credentials; keep `.env.example` in sync.
+- Backend reads `DATABASE_URL` via `src/core/config.ts`, which picks `TEST_DATABASE_URL` when `NODE_ENV=testing` (set by cross-env); never hardcode credentials; keep `.env.example` in sync.
 - Install/rebuild: `npm install`, `npm run build`
 - Develop: `npm run dev` (tsx watch, `NODE_ENV=development`)
 - Migrate: `npm run db:migrate` (drizzle-kit)

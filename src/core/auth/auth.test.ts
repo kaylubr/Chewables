@@ -1,19 +1,14 @@
-/**
- * Auth endpoint behavior tests, ported from the Python/pytest suite.
- * Uses Supertest against the exported Express app (no listener needed).
- */
 import request from 'supertest';
 import { describe, it, expect } from 'vitest';
 import { app } from '../app.js';
-import { db, schema } from '../db/schema.js';
+import { db, schema } from '../db/index.js';
 
 async function registerUser(res: request.Agent | request.SuperTest<request.Test>) {
-	const resp = await res.post('/api/auth/register').send({
+	return res.post('/api/auth/register').send({
 		email: 'user@example.com',
 		password: 'password123',
 		username: 'user',
 	});
-	return resp;
 }
 
 describe('auth endpoints', () => {
@@ -29,8 +24,6 @@ describe('auth endpoints', () => {
 		await registerUser(request(app));
 		const users = await db.select().from(schema.users);
 		expect(users).toHaveLength(1);
-		// The password is hashed in Better-Auth's account table, never stored
-		// raw on the user row.
 		const accounts = await db.select().from(schema.account);
 		expect(accounts).toHaveLength(1);
 		expect(accounts[0]?.password).toBeTruthy();

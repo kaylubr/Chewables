@@ -1,9 +1,3 @@
-/**
- * S3-compatible object-storage adapter for saved photobooth images.
- *
- * Local dev uses MinIO (see compose.yml); any S3-compatible endpoint works.
- * The backend always generates storage keys — clients never choose paths.
- */
 import {
 	S3Client,
 	CreateBucketCommand,
@@ -39,7 +33,7 @@ class S3Storage implements Storage {
 				accessKeyId: config.s3.accessKey,
 				secretAccessKey: config.s3.secretKey,
 			},
-			forcePathStyle: true, // required for MinIO
+			forcePathStyle: true,
 		});
 	}
 
@@ -87,5 +81,4 @@ class S3Storage implements Storage {
 	}
 }
 
-/** Singleton storage service. Tests may swap this for a fake. */
 export const storage: Storage = new S3Storage();
