@@ -10,11 +10,26 @@
 	let confirm = $state('');
 	let error = $state<string | null>(null);
 	let submitting = $state(false);
+	let googlePending = $state(false);
+	let googleError = $state<string | null>(null);
 
 	function nextParam(): string {
 		const params = new URLSearchParams(location.search);
 		const next = params.get('next');
 		return next && next.startsWith('/') ? next : '/photos';
+	}
+
+	async function continueWithGoogle() {
+		if (googlePending) return;
+		googleError = null;
+		googlePending = true;
+		try {
+			const url = await googleSignInUrl(nextParam());
+			window.location.assign(url);
+		} catch {
+			googleError = 'Could not start Google sign-in. Please retry.';
+			googlePending = false;
+		}
 	}
 
 	async function submit() {
@@ -49,7 +64,8 @@
 	<p class="sub">Accounts are only for saving photos to your gallery.</p>
 
 	<div class="social">
-		<a class="social-btn" href={googleSignInUrl(nextParam())}>
+		{#if googleError}<p class="error" role="alert">{googleError}</p>{/if}
+		<button type="button" class="social-btn" onclick={continueWithGoogle} disabled={googlePending}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
 				<!-- Icon from Material Icon Theme by Material Extensions - https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE -->
 				<g fill="none" fill-rule="evenodd" clip-rule="evenodd">
@@ -59,8 +75,8 @@
 					<path fill="#43a047" d="M4.255 9.322q1.23 3.057 4.51 2.854a3.94 3.94 0 0 0 1.718-.626q1.148.812 2.202 1.74a6.62 6.62 0 0 1-4.027 1.684a6.4 6.4 0 0 1-1.02 0Q3.82 14.524 2 11.116z" opacity=".993"/>
 				</g>
 			</svg>
-			<span>Continue with Google</span>
-		</a>
+			<span>{googlePending ? 'Redirecting to Google…' : 'Continue with Google'}</span>
+		</button>
 	</div>
 
 	<div class="divider"><span>or with email</span></div>
@@ -134,8 +150,16 @@
 		border-radius: 0.5rem;
 		background: var(--surface);
 		color: var(--ink);
+		font-family: inherit;
+		font-size: inherit;
+		line-height: inherit;
 		font-weight: 600;
 		text-decoration: none;
+		cursor: pointer;
+	}
+	.social-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 	.social-btn:hover {
 		border-color: var(--ember);
