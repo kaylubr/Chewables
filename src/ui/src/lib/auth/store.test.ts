@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { auth } from './store.svelte';
 
-const U1 = { id: 'u1', email: 'a@b.com', username: 'alice' };
-const U2 = { id: 'u2', email: 'persist@b.com', username: 'bob' };
+const U1 = { id: 'u1', email: 'a@b.com', username: 'alice', emailVerified: true };
+const U2 = { id: 'u2', email: 'persist@b.com', username: 'bob', emailVerified: true };
 
 describe('auth store', () => {
 	beforeEach(() => {
