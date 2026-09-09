@@ -4,12 +4,12 @@
 	import { auth } from '$lib/auth/store.svelte';
 	import { downloadDataUrl, photoFilename } from '$lib/photobooth/download';
 	import { booth } from '$lib/photobooth/store.svelte';
+	import { toastStore } from '$lib/toasts.svelte';
 
 	const resultUrl = booth.session.resultUrl;
 	const frame = booth.frame;
 
 	let saving = $state(false);
-	let saveError = $state<string | null>(null);
 	let showSignInPrompt = $state(false);
 
 	function download() {
@@ -27,7 +27,6 @@
 	}
 
 	async function save() {
-		saveError = null;
 		if (!auth.isAuthenticated) {
 			// Saving requires an account; warn that leaving loses the in-memory result.
 			showSignInPrompt = true;
@@ -38,9 +37,10 @@
 		try {
 			await api.uploadPhoto(frame.id, dataUrlToBlob(resultUrl));
 			booth.session.state = 'completed';
-			goto('/photos?justSaved=1');
+			toastStore.success('Photo saved.');
+			goto('/photos');
 		} catch (e) {
-			saveError = e instanceof ApiError ? e.message : 'Could not save the photo. Please retry.';
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not save the photo. Please retry.');
 		} finally {
 			saving = false;
 		}
@@ -48,6 +48,7 @@
 
 	function confirmSignIn() {
 		showSignInPrompt = false;
+		toastStore.error('Sign in to save your photo.');
 		goto('/login?next=/photos');
 	}
 
@@ -87,8 +88,6 @@
 		<p class="empty">No finished photo in this session.</p>
 		<button type="button" class="secondary" onclick={startOver}>Start over</button>
 	{/if}
-
-	{#if saveError}<p class="save-error" role="alert">{saveError}</p>{/if}
 </main>
 
 {#if showSignInPrompt}
@@ -166,15 +165,6 @@
 	}
 	.empty {
 		color: var(--ink-soft);
-	}
-	.save-error {
-		color: var(--danger);
-		background: var(--danger-bg);
-		border: 1px solid var(--danger-line);
-		padding: 0.6rem 0.75rem;
-		border-radius: 0.5rem;
-		margin-top: 1rem;
-		font-size: var(--text-sm);
 	}
 	@media (max-width: 480px) {
 		.actions {

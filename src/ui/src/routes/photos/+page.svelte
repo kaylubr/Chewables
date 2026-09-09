@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
+	import { toastStore } from '$lib/toasts.svelte';
 	import type { SavedPhoto } from '@chewable/shared';
 
 	type DisplayPhoto = SavedPhoto & { displayUrl?: string };
 
 	let photos = $state<DisplayPhoto[]>([]);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let loadFailed = $state(false);
 	let deleting = $state<string | null>(null);
 
 	async function load() {
-		error = null;
+		loadFailed = false;
 		if (!auth.isAuthenticated) return;
 		loading = true;
 		try {
@@ -29,7 +29,8 @@
 				})
 			);
 		} catch (e) {
-			error = e instanceof ApiError ? e.message : 'Could not load your photos.';
+			loadFailed = true;
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not load your photos.');
 		} finally {
 			loading = false;
 		}
@@ -41,14 +42,13 @@
 		try {
 			await api.deletePhoto(id);
 			photos = photos.filter((p) => p.id !== id);
+			toastStore.success('Photo deleted.');
 		} catch (e) {
-			error = e instanceof ApiError ? e.message : 'Could not delete the photo.';
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not delete the photo.');
 		} finally {
 			deleting = null;
 		}
 	}
-
-	const justSaved = $derived(page.url.searchParams.get('justSaved') === '1');
 
 	onMount(() => {
 		void load();
@@ -68,12 +68,12 @@
 		</p>
 	{:else if loading}
 		<p class="empty">Loading…</p>
-	{:else if error}
-		<p class="error" role="alert">{error}</p>
+	{:else if loadFailed}
+		<p class="empty">Couldn't load your photos.</p>
 		<button type="button" class="secondary" onclick={load}>Retry</button>
 	{:else if photos.length === 0}
 		<p class="empty">
-			{justSaved ? 'Saved! ' : ''}No saved photos yet. Take one in the{' '}
+			No saved photos yet. Take one in the{' '}
 			<a href="/photobooth/frame">photobooth</a>.
 		</p>
 	{:else}
@@ -174,9 +174,6 @@
 	.empty {
 		color: var(--ink-soft);
 		margin-top: 2rem;
-	}
-	.error {
-		color: var(--danger);
 	}
 	.secondary {
 		background: var(--dev-bg);

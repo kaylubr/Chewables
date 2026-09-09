@@ -3,7 +3,10 @@
 	import { goto } from '$app/navigation';
 	import brand from '$lib/assets/brand.svg';
 	import favicon from '$lib/assets/favicon.svg';
+	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
+	import ToastRegion from '$lib/components/ToastRegion.svelte';
+	import { toastStore } from '$lib/toasts.svelte';
 	import "$lib/css/fonts.css"
 	
 	let { children } = $props();
@@ -26,10 +29,16 @@
 		if (event.key === 'Escape') closeDrawer();
 	}
 
-	function signOut() {
+	async function signOut() {
 		closeDrawer();
-		auth.clear();
-		goto('/');
+		try {
+			await api.logout();
+			auth.clear();
+			toastStore.success('Signed out.');
+			goto('/');
+		} catch (e) {
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not sign out. Please retry.');
+		}
 	}
 </script>
 
@@ -101,6 +110,8 @@
 		{/if}
 	</nav>
 </div>
+
+<ToastRegion />
 
 {@render children()}
 

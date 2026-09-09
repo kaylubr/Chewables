@@ -3,15 +3,14 @@
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
+	import { toastStore } from '$lib/toasts.svelte';
 
 	let email = $state('');
 	let username = $state('');
 	let password = $state('');
 	let confirm = $state('');
-	let error = $state<string | null>(null);
 	let submitting = $state(false);
 	let googlePending = $state(false);
-	let googleError = $state<string | null>(null);
 	let googleFlow: GoogleAuthController | null = null;
 
 	function nextParam(): string {
@@ -22,13 +21,13 @@
 
 	async function continueWithGoogle() {
 		if (googlePending) return;
-		googleError = null;
 		googlePending = true;
 		googleFlow = startGoogleSignIn(nextParam());
 		const outcome = await googleFlow.result;
 		googleFlow = null;
 		if (outcome.status === 'success') {
 			auth.setUser(outcome.user);
+			toastStore.success('Signed in.');
 			goto(nextParam());
 			return;
 		}
@@ -38,7 +37,7 @@
 			return;
 		}
 		if (outcome.status === 'error') {
-			googleError = outcome.message;
+			toastStore.error(outcome.message);
 		}
 	}
 
@@ -47,22 +46,22 @@
 	}
 
 	async function submit() {
-		error = null;
 		if (password !== confirm) {
-			error = 'Passwords do not match.';
+			toastStore.error('Passwords do not match.');
 			return;
 		}
 		if (password.length < 8) {
-			error = 'Password must be at least 8 characters.';
+			toastStore.error('Password must be at least 8 characters.');
 			return;
 		}
 		submitting = true;
 		try {
 			const res = await api.register(email, username, password);
-					auth.setUser(res);
-					goto('/photos');
+			auth.setUser(res);
+			toastStore.success('Account created.');
+			goto('/photos');
 		} catch (e) {
-			error = e instanceof ApiError ? e.message : 'Could not create the account. Please retry.';
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not create the account. Please retry.');
 		} finally {
 			submitting = false;
 		}
@@ -78,7 +77,6 @@
 	<p class="sub">Accounts are only for saving photos to your gallery.</p>
 
 	<div class="social">
-		{#if googleError}<p class="error" role="alert">{googleError}</p>{/if}
 		<button type="button" class="social-btn" onclick={continueWithGoogle} disabled={googlePending}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
 				<!-- Icon from Material Icon Theme by Material Extensions - https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE -->
@@ -121,8 +119,6 @@
 			Confirm password
 			<input type="password" bind:value={confirm} required autocomplete="new-password" />
 		</label>
-
-		{#if error}<p class="error" role="alert">{error}</p>{/if}
 
 		<button type="submit" class="primary" disabled={submitting}>
 			{submitting ? 'Creating…' : 'Create account'}
@@ -226,14 +222,6 @@
 	}
 	input:focus {
 		border-color: var(--ember);
-	}
-	.error {
-		color: var(--danger);
-		background: var(--danger-bg);
-		border: 1px solid var(--danger-line);
-		padding: 0.6rem 0.75rem;
-		border-radius: 0.5rem;
-		font-size: var(--text-sm);
 	}
 	.primary {
 		background: var(--ember);
