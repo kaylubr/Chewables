@@ -127,7 +127,7 @@
 </script>
 
 <svelte:head>
-	<title>Camera — Chewables</title>
+	<title>Camera</title>
 </svelte:head>
 
 <main class="camera-page">

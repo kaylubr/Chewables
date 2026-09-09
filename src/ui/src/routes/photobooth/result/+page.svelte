@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-	<title>Your photo — Chewables</title>
+	<title>Your photo</title>
 </svelte:head>
 
 <main class="result-page">

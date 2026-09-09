@@ -69,7 +69,7 @@
 </script>
 
 <svelte:head>
-	<title>Create account — Chewables</title>
+	<title>Create account</title>
 </svelte:head>
 
 <main class="auth-page">

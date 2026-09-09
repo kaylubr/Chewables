@@ -74,7 +74,7 @@
 </script>
 
 <svelte:head>
-	<title>Sign in — Chewables</title>
+	<title>Sign in</title>
 </svelte:head>
 
 <main class="auth-page">

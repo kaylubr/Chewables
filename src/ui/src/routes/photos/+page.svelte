@@ -56,7 +56,7 @@
 </script>
 
 <svelte:head>
-	<title>My photos — Chewables</title>
+	<title>My photos</title>
 </svelte:head>
 
 <main class="gallery">

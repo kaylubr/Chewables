@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>Choose a frame — Chewables</title>
+	<title>Choose a frame</title>
 </svelte:head>
 
 <main class="frame-page">

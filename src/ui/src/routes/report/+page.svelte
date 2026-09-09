@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Report an issue — Chewables</title>
+	<title>Report an issue</title>
 </svelte:head>
 
 <main class="report-page">
