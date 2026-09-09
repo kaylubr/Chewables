@@ -59,6 +59,23 @@ export async function googleSignInUrl(next?: string, origin?: string): Promise<s
 }
 
 /**
+ * Size the popup and center it on the screen containing the opener. Browsers
+ * otherwise drop script-opened windows near the top-left of the screen. Must
+ * run while the popup is still a same-origin blank page, before it navigates
+ * to the provider; some browsers ignore move/resize, which is fine.
+ */
+function centerPopup(popup: Window) {
+	try {
+		popup.resizeTo(520, 620);
+		const x = popup.screenX + Math.round((popup.screen.availWidth - 520) / 2);
+		const y = popup.screenY + Math.round((popup.screen.availHeight - 620) / 2);
+		popup.moveTo(x, y);
+	} catch {
+		/* positioning is best-effort */
+	}
+}
+
+/**
  * Run a Google sign-in in a popup window. Call synchronously from a click
  * handler so the popup is not blocked; the result settles when the popup's
  * callback page posts back, the popup is closed, or the popup is blocked
@@ -66,6 +83,9 @@ export async function googleSignInUrl(next?: string, origin?: string): Promise<s
  */
 export function startGoogleSignIn(next?: string): GoogleAuthController {
 	const popup = window.open('', POPUP_NAME, POPUP_FEATURES);
+	if (popup) {
+		centerPopup(popup);
+	}
 	let settled = false;
 	let graceTimer: number | undefined;
 	let intervalId = 0;
