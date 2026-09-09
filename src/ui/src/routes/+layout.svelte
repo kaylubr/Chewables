@@ -221,14 +221,14 @@
 		z-index: 30;
 		background: var(--crimson);
 		color: #fff;
-		padding: 1.2rem;
+		padding: 0.45rem 0.8rem;
 	}
 	.bar-inner {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-		padding: calc(0.7rem + env(safe-area-inset-top)) 1.5rem 0.7rem;
+		padding: calc(0.3rem + env(safe-area-inset-top)) 1.5rem 0.3rem;
 		max-width: 76rem;
 		margin: 0 auto;
 	}
@@ -244,7 +244,7 @@
 	}
 	.brand-mark {
 		display: block;
-		height: 10vh;
+		height: clamp(3.6rem, 2.45rem + 2vw, 5.25rem);
 		width: auto;
 	}
 	.brand:hover .brand-mark {
