@@ -41,10 +41,6 @@
 				onclick={() => choose(frame.id)}
 			>
 				<img src={frame.image} alt={`${frame.name} frame preview`} width="220" />
-				<span class="card-meta">
-					<span class="name">{frame.name}</span>
-					<span class="count">{frame.photoCount} photos</span>
-				</span>
 			</button>
 		{/each}
 	</div>
@@ -98,18 +94,6 @@
 		max-height: 240px;
 		object-fit: contain;
 	}
-	.name {
-		font-family: var(--font-display);
-		font-weight: 640;
-		font-size: var(--text-lg);
-	}
-	.count {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--ink-faint);
-	}
 	.error {
 		color: var(--danger);
 		font-weight: 600;
@@ -146,7 +130,7 @@
 			max-width: 38%;
 			flex: none;
 		}
-		.frame-card .card-meta {
+		.frame-card {
 			display: flex;
 			flex-direction: column;
 			gap: 0.35rem;
