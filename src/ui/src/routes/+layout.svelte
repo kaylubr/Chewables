@@ -5,6 +5,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
+	import UserMenu from '$lib/components/UserMenu.svelte';
 	import ToastRegion from '$lib/toasts/ToastRegion.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 	import "$lib/css/fonts.css"
@@ -56,13 +57,15 @@
 				<a href="/photobooth/frame">Photobooth</a>
 				<a href="/#faq">FAQ</a>
 				<a href="/#about">About</a>
-				{#if auth.isAuthenticated}
-					<a href="/profile">My profile</a>
-					<button type="button" class="link" onclick={signOut}>Sign out</button>
-				{:else}
+				{#if !auth.isAuthenticated}
 					<a href="/login">Sign in</a>
 				{/if}
 			</nav>
+			{#if auth.user}
+				<div class="account">
+					<UserMenu user={auth.user} onSignOut={signOut} />
+				</div>
+			{/if}
 			<button
 				type="button"
 				class="menu-toggle"
@@ -236,6 +239,10 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+	}
+	.account {
+		display: none;
+		align-items: center;
 	}
 	.brand {
 		display: inline-flex;
@@ -413,6 +420,11 @@
 	.drawer-nav .link:hover {
 		color: var(--crimson);
 		background: var(--surface-2);
+	}
+	@media (min-width: 761px) {
+		.account {
+			display: flex;
+		}
 	}
 	@media (max-width: 760px) {
 		nav {
