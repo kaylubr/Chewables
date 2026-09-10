@@ -20,7 +20,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	console.log(PUBLIC_API_BASE);
 	console.log(path);
-	
+
 	const res = await fetch(`${PUBLIC_API_BASE}${path}`, {
 		...init,
 		credentials: "include",
@@ -74,7 +74,7 @@ export const api = {
 	logout: () => {
 		return request<void>("/api/auth/sign-out", { method: "POST" });
 	},
-	sendVerificationEmail: (email: string, next = "/photos") => {
+	sendVerificationEmail: (email: string, next = "/profile") => {
 		// Ask Better-Auth to (re)send the verification email for an existing
 		// unverified account. The callbackURL points at the SPA auth-popup page
 		// so verification lands the user back in the app after clicking the link.

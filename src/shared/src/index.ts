@@ -3,6 +3,7 @@ export interface AuthUser {
 	email: string;
 	username: string;
 	emailVerified: boolean;
+	image: string | null;
 }
 
 export interface TokenResponse {

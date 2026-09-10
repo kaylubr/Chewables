@@ -33,7 +33,7 @@ export interface GoogleAuthController {
  */
 export async function googleSignInUrl(next?: string, origin?: string): Promise<string> {
 	const spaOrigin = origin ?? (typeof window !== 'undefined' ? window.location.origin : PUBLIC_API_BASE);
-	const callbackURL = `${spaOrigin}/auth-popup.html?api=${encodeURIComponent(PUBLIC_API_BASE)}&next=${encodeURIComponent(next ?? '/photos')}`;
+	const callbackURL = `${spaOrigin}/auth-popup.html?api=${encodeURIComponent(PUBLIC_API_BASE)}&next=${encodeURIComponent(next ?? '/profile')}`;
 
 	const res = await fetch(`${PUBLIC_API_BASE}/api/auth/sign-in/social`, {
 		method: 'POST',

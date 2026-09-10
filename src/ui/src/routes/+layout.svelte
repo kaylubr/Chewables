@@ -57,7 +57,7 @@
 				<a href="/#faq">FAQ</a>
 				<a href="/#about">About</a>
 				{#if auth.isAuthenticated}
-					<a href="/photos">My photos</a>
+					<a href="/profile">My profile</a>
 					<button type="button" class="link" onclick={signOut}>Sign out</button>
 				{:else}
 					<a href="/login">Sign in</a>
@@ -103,7 +103,7 @@
 		<a href="/#faq" onclick={closeDrawer}>FAQ</a>
 		<a href="/#about" onclick={closeDrawer}>About</a>
 		{#if auth.isAuthenticated}
-			<a href="/photos" onclick={closeDrawer}>My photos</a>
+			<a href="/profile" onclick={closeDrawer}>My profile</a>
 			<button type="button" class="link" onclick={signOut}>Sign out</button>
 		{:else}
 			<a href="/login" onclick={closeDrawer}>Sign in</a>

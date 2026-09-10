@@ -24,12 +24,12 @@
 
 	function afterLogin() {
 		const next = page.url.searchParams.get('next');
-		goto(next && next.startsWith('/') ? next : '/photos');
+		goto(next && next.startsWith('/') ? next : '/profile');
 	}
 
 	function nextParam(): string {
 		const next = page.url.searchParams.get('next');
-		return next && next.startsWith('/') ? next : '/photos';
+		return next && next.startsWith('/') ? next : '/profile';
 	}
 
 	async function continueWithGoogle() {

@@ -11,75 +11,75 @@ import type {
 import * as AuthRepo from "./auth.repo.js";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: {
-      user: schema.users,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
-    },
-  }),
-  secret: config.auth.secret,
-  baseURL: config.oauth.backendBaseUrl,
-  trustedOrigins: config.corsOrigin ? [config.corsOrigin] : [],
-  emailAndPassword: {
-    enabled: true,
-    // Verification is a standalone feature and a prerequisite for
-    // social-account linking (see account.accountLinking below), but it
-    // does NOT gate password login: unverified users may still sign in
-    // with their password and verify later.
-    requireEmailVerification: false,
-    autoSignIn: true,
-  },
-  emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail({
-        to: user.email,
-        verifyUrl: url,
-      });
-    },
-    // Send a verification email at signup so every new account can prove
-    // its email before linking social providers.
-    sendOnSignUp: true,
-    // Better-Auth appends the callbackURL (default: backend `/`) to the
-    // verify-email URL. Because the SPA sits on a separate origin in dev,
-    // `register` / `loginWithUsername` pass the SPA auth-popup page as the
-    // callbackURL so verification lands the user back in the app. See
-    // `../ui/static/auth-popup.html`.
-    autoSignInAfterVerification: true,
-  },
-  account: {
-    accountLinking: {
-      enabled: true,
-      requireLocalEmailVerified: true,
-    },
-  },
-  socialProviders: {
-    google: {
-      clientId: config.auth.google.clientId,
-      clientSecret: config.auth.google.clientSecret,
-      redirectURI: `${config.oauth.backendBaseUrl}/api/auth/callback/google`,
-    },
-  },
-  session: {
-    expiresIn: config.auth.session.expiresIn,
-    cookieCache: {
-      enabled: true,
-      maxAge: config.auth.session.expiresIn,
-    },
-  },
-  cookies: {
-    session_token: {
-      name: config.auth.session.cookieName,
-      sameSite: config.auth.session.sameSite,
-      secure: config.auth.session.secure,
-    },
-  },
-  advanced: {
-    cookiePrefix: "chewables",
-    useCrossSubDomainCookies: false,
-  },
+	database: drizzleAdapter(db, {
+		provider: "pg",
+		schema: {
+			user: schema.users,
+			session: schema.session,
+			account: schema.account,
+			verification: schema.verification,
+		},
+	}),
+	secret: config.auth.secret,
+	baseURL: config.oauth.backendBaseUrl,
+	trustedOrigins: config.corsOrigin ? [config.corsOrigin] : [],
+	emailAndPassword: {
+		enabled: true,
+		// Verification is a standalone feature and a prerequisite for
+		// social-account linking (see account.accountLinking below), but it
+		// does NOT gate password login: unverified users may still sign in
+		// with their password and verify later.
+		requireEmailVerification: false,
+		autoSignIn: true,
+	},
+	emailVerification: {
+		sendVerificationEmail: async ({ user, url }) => {
+			await sendVerificationEmail({
+				to: user.email,
+				verifyUrl: url,
+			});
+		},
+		// Send a verification email at signup so every new account can prove
+		// its email before linking social providers.
+		sendOnSignUp: true,
+		// Better-Auth appends the callbackURL (default: backend `/`) to the
+		// verify-email URL. Because the SPA sits on a separate origin in dev,
+		// `register` / `loginWithUsername` pass the SPA auth-popup page as the
+		// callbackURL so verification lands the user back in the app. See
+		// `../ui/static/auth-popup.html`.
+		autoSignInAfterVerification: true,
+	},
+	account: {
+		accountLinking: {
+			enabled: true,
+			requireLocalEmailVerified: true,
+		},
+	},
+	socialProviders: {
+		google: {
+			clientId: config.auth.google.clientId,
+			clientSecret: config.auth.google.clientSecret,
+			redirectURI: `${config.oauth.backendBaseUrl}/api/auth/callback/google`,
+		},
+	},
+	session: {
+		expiresIn: config.auth.session.expiresIn,
+		cookieCache: {
+			enabled: true,
+			maxAge: config.auth.session.expiresIn,
+		},
+	},
+	cookies: {
+		session_token: {
+			name: config.auth.session.cookieName,
+			sameSite: config.auth.session.sameSite,
+			secure: config.auth.session.secure,
+		},
+	},
+	advanced: {
+		cookiePrefix: "chewables",
+		useCrossSubDomainCookies: false,
+	},
 });
 
 export class EmailTakenError extends Error {
@@ -102,8 +102,8 @@ export function applyAuthCookies(
 /** Callback URL for the email-verification link: the SPA auth-popup page. */
 function verificationCallbackUrl(next?: string): string {
 	const base = config.oauth.redirectBase;
-	const target = next?.startsWith("/") ? next : "/photos";
-	return `${base}/auth-popup.html?api=${encodeURIComponent(config.oauth.backendBaseUrl)}&verify=1&next=${encodeURIComponent(target)}`;
+	const target = next?.startsWith("/") ? next : "/profile";
+	return `${base}/auth-popup.html?api=${encodeURIComponent(config.oauth.redirectBase)}&verify=1&next=${encodeURIComponent(target)}`;
 }
 
 export async function register(input: CreateUserInput): Promise<AuthResult> {
@@ -131,6 +131,7 @@ export async function register(input: CreateUserInput): Promise<AuthResult> {
 			email: result.user.email,
 			username: input.username,
 			emailVerified: result.user.emailVerified,
+			image: result.user.image ?? null,
 		},
 		setCookies: extractSetCookie(result.response?.headers),
 	};
@@ -163,6 +164,7 @@ export async function loginWithUsername(
 			email: user.email,
 			username: user.username ?? "",
 			emailVerified: result.user.emailVerified,
+			image: result.user.image ?? null,
 		},
 		setCookies: extractSetCookie(result.response?.headers),
 	};
@@ -180,6 +182,7 @@ export async function getSessionUser(
 		email: session.user.email,
 		username: session.user.name ?? "",
 		emailVerified: session.user.emailVerified,
+		image: session.user.image ?? null,
 	};
 }
 
@@ -209,7 +212,13 @@ export async function resendVerificationForSession(
 
 interface BetterAuthResult {
 	token: string | null;
-	user: { id: string; email: string; name: string; emailVerified: boolean };
+	user: {
+		id: string;
+		email: string;
+		name: string;
+		emailVerified: boolean;
+		image: string | null;
+	};
 	response?: { headers?: Headers | null };
 }
 

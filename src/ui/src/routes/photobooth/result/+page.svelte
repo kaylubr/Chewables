@@ -1,61 +1,65 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { api, ApiError } from '$lib/api/client';
-	import { auth } from '$lib/auth/store.svelte';
-	import { downloadDataUrl, photoFilename } from '$lib/photobooth/download';
-	import { booth } from '$lib/photobooth/store.svelte';
-	import { toastStore } from '$lib/toasts/toasts.svelte';
+import { goto } from "$app/navigation";
+import { ApiError, api } from "$lib/api/client";
+import { auth } from "$lib/auth/store.svelte";
+import { downloadDataUrl, photoFilename } from "$lib/photobooth/download";
+import { booth } from "$lib/photobooth/store.svelte";
+import { toastStore } from "$lib/toasts/toasts.svelte";
 
-	const resultUrl = booth.session.resultUrl;
-	const frame = booth.frame;
+const resultUrl = booth.session.resultUrl;
+const frame = booth.frame;
 
-	let saving = $state(false);
-	let showSignInPrompt = $state(false);
+let saving = $state(false);
+let showSignInPrompt = $state(false);
 
-	function download() {
-		if (!resultUrl) return;
-		downloadDataUrl(resultUrl, photoFilename(frame?.id));
+function download() {
+	if (!resultUrl) return;
+	downloadDataUrl(resultUrl, photoFilename(frame?.id));
+}
+
+function dataUrlToBlob(url: string): Blob {
+	const [meta, b64] = url.split(",");
+	const mime = /data:(.*?);/.exec(meta)?.[1] ?? "image/webp";
+	const bin = atob(b64);
+	const bytes = new Uint8Array(bin.length);
+	for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+	return new Blob([bytes], { type: mime });
+}
+
+async function save() {
+	if (!auth.isAuthenticated) {
+		// Saving requires an account; warn that leaving loses the in-memory result.
+		showSignInPrompt = true;
+		return;
 	}
-
-	function dataUrlToBlob(url: string): Blob {
-		const [meta, b64] = url.split(',');
-		const mime = /data:(.*?);/.exec(meta)?.[1] ?? 'image/webp';
-		const bin = atob(b64);
-		const bytes = new Uint8Array(bin.length);
-		for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-		return new Blob([bytes], { type: mime });
+	if (!resultUrl || !frame) return;
+	saving = true;
+	try {
+		await api.uploadPhoto(frame.id, dataUrlToBlob(resultUrl));
+		booth.session.state = "completed";
+		toastStore.success("Photo saved.");
+		goto("/profile");
+	} catch (e) {
+		toastStore.error(
+			e instanceof ApiError
+				? e.message
+				: "Could not save the photo. Please retry.",
+		);
+	} finally {
+		saving = false;
 	}
+}
 
-	async function save() {
-		if (!auth.isAuthenticated) {
-			// Saving requires an account; warn that leaving loses the in-memory result.
-			showSignInPrompt = true;
-			return;
-		}
-		if (!resultUrl || !frame) return;
-		saving = true;
-		try {
-			await api.uploadPhoto(frame.id, dataUrlToBlob(resultUrl));
-			booth.session.state = 'completed';
-			toastStore.success('Photo saved.');
-			goto('/photos');
-		} catch (e) {
-			toastStore.error(e instanceof ApiError ? e.message : 'Could not save the photo. Please retry.');
-		} finally {
-			saving = false;
-		}
-	}
+function confirmSignIn() {
+	showSignInPrompt = false;
+	toastStore.error("Sign in to save your photo.");
+	goto("/login?next=/photos");
+}
 
-	function confirmSignIn() {
-		showSignInPrompt = false;
-		toastStore.error('Sign in to save your photo.');
-		goto('/login?next=/photos');
-	}
-
-	function startOver() {
-		booth.reset();
-		goto('/photobooth/frame');
-	}
+function startOver() {
+	booth.reset();
+	goto("/photobooth/frame");
+}
 </script>
 
 <svelte:head>

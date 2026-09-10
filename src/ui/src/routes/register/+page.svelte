@@ -16,7 +16,7 @@
 	function nextParam(): string {
 		const params = new URLSearchParams(location.search);
 		const next = params.get('next');
-		return next && next.startsWith('/') ? next : '/photos';
+		return next && next.startsWith('/') ? next : '/profile';
 	}
 
 	async function continueWithGoogle() {
@@ -59,7 +59,7 @@
 			const res = await api.register(email, username, password);
 			auth.setUser(res);
 			toastStore.success('Account created.');
-			goto('/photos');
+			goto('/profile');
 		} catch (e) {
 			toastStore.error(e instanceof ApiError ? e.message : 'Could not create the account. Please retry.');
 		} finally {
