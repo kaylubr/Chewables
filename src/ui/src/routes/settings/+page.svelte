@@ -4,30 +4,102 @@
 	import { page } from '$app/state';
 	import type { AuthUser } from '@chewable/shared';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 
+	/**
+	 * The action waiting on confirmation. Each one carries what it needs, so the
+	 * dialog can describe it and then run it without re-reading the form.
+	 */
+	type Pending =
+		| { kind: 'sign-out' }
+		| { kind: 'resend-verification' }
+		| { kind: 'change-email'; newEmail: string }
+		| { kind: 'change-password'; currentPassword: string; newPassword: string }
+		| { kind: 'set-password'; newPassword: string }
+		| { kind: 'delete-account' };
+
 	// Snapshot of the session user for the template, so Svelte can narrow it
 	// after the auth gate.
 	let user = $state<AuthUser | null>(null);
+	let pending = $state<Pending | null>(null);
+	let running = $state(false);
 
 	// Email
 	let newEmail = $state('');
-	let emailSubmitting = $state(false);
-	let resending = $state(false);
 
 	// Password
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
-	let passwordSubmitting = $state(false);
 
 	// Delete account
 	let confirmUsername = $state('');
 	let deletePassword = $state('');
-	let deleting = $state(false);
 	let deleteError = $state('');
+
+	const copy = $derived(pending ? describe(pending) : null);
+
+	function describe(action: Pending): {
+		title: string;
+		confirmLabel: string;
+		busyLabel: string;
+		destructive: boolean;
+		failure: string;
+	} {
+		switch (action.kind) {
+			case 'sign-out':
+				return {
+					title: 'Sign out?',
+					confirmLabel: 'Sign out',
+					busyLabel: 'Signing out…',
+					destructive: false,
+					failure: 'Could not sign out. Please retry.',
+				};
+			case 'resend-verification':
+				return {
+					title: 'Send a new verification link?',
+					confirmLabel: 'Send link',
+					busyLabel: 'Sending…',
+					destructive: false,
+					failure: 'Could not send the email. Please retry.',
+				};
+			case 'change-email':
+				return {
+					title: 'Change your email?',
+					confirmLabel: 'Send link',
+					busyLabel: 'Sending…',
+					destructive: false,
+					failure: 'Could not start the email change. Please retry.',
+				};
+			case 'change-password':
+				return {
+					title: 'Change your password?',
+					confirmLabel: 'Change password',
+					busyLabel: 'Changing…',
+					destructive: false,
+					failure: 'Could not update your password. Please retry.',
+				};
+			case 'set-password':
+				return {
+					title: 'Set a password?',
+					confirmLabel: 'Set password',
+					busyLabel: 'Setting…',
+					destructive: false,
+					failure: 'Could not set your password. Please retry.',
+				};
+			case 'delete-account':
+				return {
+					title: 'Delete your account?',
+					confirmLabel: 'Delete account',
+					busyLabel: 'Deleting…',
+					destructive: true,
+					failure: 'Could not delete your account. Please retry.',
+				};
+		}
+	}
 
 	onMount(async () => {
 		const loaded = await auth.ensureSession();
@@ -73,38 +145,24 @@
 		return e instanceof ApiError ? e.message : fallback;
 	}
 
-	async function resendVerification() {
-		if (resending) return;
-		resending = true;
-		try {
-			await auth.sendVerificationEmail();
-			toastStore.success('Verification email sent. Check your inbox.');
-		} catch (e) {
-			toastStore.error(message(e, 'Could not send the email. Please retry.'));
-		} finally {
-			resending = false;
-		}
+	async function refreshUser() {
+		await auth.ensureSession();
+		user = auth.user;
 	}
 
-	async function submitEmailChange() {
-		if (emailSubmitting) return;
-		emailSubmitting = true;
-		try {
-			await api.changeEmail(newEmail);
-			newEmail = '';
-			// Better Auth answers success even when the address is already
-			// taken, and nothing moves until the link is followed — so this can
-			// only ever ask the user to check their inbox.
-			toastStore.success('Check your inbox to verify your new email.');
-		} catch (e) {
-			toastStore.error(message(e, 'Could not start the email change. Please retry.'));
-		} finally {
-			emailSubmitting = false;
-		}
+	function clearPasswords() {
+		currentPassword = '';
+		newPassword = '';
+		confirmPassword = '';
 	}
 
-	async function submitPassword() {
-		if (passwordSubmitting) return;
+	function submitEmailChange() {
+		const address = newEmail.trim();
+		if (!address) return;
+		pending = { kind: 'change-email', newEmail: address };
+	}
+
+	function submitPassword() {
 		if (newPassword !== confirmPassword) {
 			toastStore.error('Passwords do not match.');
 			return;
@@ -113,29 +171,12 @@
 			toastStore.error('Password must be at least 8 characters.');
 			return;
 		}
-		const hadPassword = user?.hasPassword ?? false;
-		passwordSubmitting = true;
-		try {
-			if (hadPassword) {
-				await api.changePassword(currentPassword, newPassword);
-			} else {
-				await api.setPassword(newPassword);
-			}
-			await auth.ensureSession();
-			user = auth.user;
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
-			toastStore.success(hadPassword ? 'Password updated.' : 'Password set.');
-		} catch (e) {
-			toastStore.error(message(e, 'Could not update your password. Please retry.'));
-		} finally {
-			passwordSubmitting = false;
-		}
+		pending = user?.hasPassword
+			? { kind: 'change-password', currentPassword, newPassword }
+			: { kind: 'set-password', newPassword };
 	}
 
-	async function submitDelete() {
-		if (deleting) return;
+	function submitDelete() {
 		deleteError = '';
 		if (confirmUsername !== user?.username) {
 			deleteError = 'Type your username exactly to confirm.';
@@ -146,27 +187,70 @@
 			deleteError = 'Enter your password to delete this account.';
 			return;
 		}
-		deleting = true;
-		try {
-			await api.deleteAccount(confirmUsername, hasPassword ? deletePassword : undefined);
-			auth.clear();
-			toastStore.success('Your account was deleted.');
-			goto('/');
-		} catch (e) {
-			deleteError = message(e, 'Could not delete your account. Please retry.');
-		} finally {
-			deleting = false;
-		}
+		pending = { kind: 'delete-account' };
 	}
 
-	async function signOut() {
+	async function run() {
+		const action = pending;
+		if (!action || running) return;
+		running = true;
 		try {
-			await api.logout();
-			auth.clear();
-			toastStore.success('Signed out.');
-			goto('/');
+			switch (action.kind) {
+				case 'sign-out':
+					await api.logout();
+					auth.clear();
+					toastStore.success('Signed out.');
+					goto('/');
+					break;
+				case 'resend-verification':
+					await auth.sendVerificationEmail();
+					toastStore.success('Verification email sent. Check your inbox.');
+					break;
+				case 'change-email':
+					await api.changeEmail(action.newEmail);
+					newEmail = '';
+					// Better Auth answers success even when the address is
+					// already taken, and nothing moves until the link is
+					// followed — so this can only ask the user to check their
+					// inbox.
+					toastStore.success('Check your inbox to verify your new email.');
+					break;
+				case 'change-password':
+					await api.changePassword(action.currentPassword, action.newPassword);
+					await refreshUser();
+					clearPasswords();
+					toastStore.success('Password updated.');
+					break;
+				case 'set-password':
+					await api.setPassword(action.newPassword);
+					await refreshUser();
+					clearPasswords();
+					toastStore.success('Password set.');
+					break;
+				case 'delete-account': {
+					const hasPassword = user?.hasPassword ?? false;
+					await api.deleteAccount(
+						confirmUsername,
+						hasPassword ? deletePassword : undefined,
+					);
+					auth.clear();
+					toastStore.success('Your account was deleted.');
+					goto('/');
+					break;
+				}
+			}
+			pending = null;
 		} catch (e) {
-			toastStore.error(message(e, 'Could not sign out. Please retry.'));
+			pending = null;
+			// Deletion keeps its error beside the fields the user has to fix;
+			// everything else has no form on screen to correct.
+			if (action.kind === 'delete-account') {
+				deleteError = message(e, describe(action).failure);
+			} else {
+				toastStore.error(message(e, describe(action).failure));
+			}
+		} finally {
+			running = false;
 		}
 	}
 </script>
@@ -175,7 +259,7 @@
 	<title>Settings</title>
 </svelte:head>
 
-<main class="settings">
+<main class="settings" inert={pending !== null}>
 	<h1>Settings</h1>
 
 	{#if !user}
@@ -198,7 +282,13 @@
 				</div>
 			</div>
 			<div class="actions">
-				<button type="button" class="secondary" onclick={signOut}>Sign out</button>
+				<button
+					type="button"
+					class="secondary"
+					onclick={() => (pending = { kind: 'sign-out' })}
+				>
+					Sign out
+				</button>
 			</div>
 		</section>
 
@@ -217,20 +307,22 @@
 					Verify your email to let Google sign-in link to your account.
 				</p>
 				<div class="actions">
-					<button type="button" class="secondary" onclick={resendVerification} disabled={resending}>
-						{resending ? 'Sending…' : 'Verify email'}
+					<button
+						type="button"
+						class="secondary"
+						onclick={() => (pending = { kind: 'resend-verification' })}
+					>
+						Verify email
 					</button>
 				</div>
 			{/if}
 
-			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitEmailChange(); }}>
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); submitEmailChange(); }}>
 				<label>
 					New email address
 					<input type="email" bind:value={newEmail} required autocomplete="email" />
 				</label>
-				<button type="submit" class="primary" disabled={emailSubmitting}>
-					{emailSubmitting ? 'Sending…' : 'Change email'}
-				</button>
+				<button type="submit" class="primary">Change email</button>
 			</form>
 		</section>
 
@@ -242,7 +334,7 @@
 					gives you a way back in without Google.
 				</p>
 			{/if}
-			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitPassword(); }}>
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); submitPassword(); }}>
 				{#if user.hasPassword}
 					<label>
 						Current password
@@ -274,14 +366,8 @@
 						autocomplete="new-password"
 					/>
 				</label>
-				<button type="submit" class="primary" disabled={passwordSubmitting}>
-					{user.hasPassword
-						? passwordSubmitting
-							? 'Updating…'
-							: 'Update password'
-						: passwordSubmitting
-							? 'Setting…'
-							: 'Set password'}
+				<button type="submit" class="primary">
+					{user.hasPassword ? 'Update password' : 'Set password'}
 				</button>
 			</form>
 		</section>
@@ -310,13 +396,47 @@
 				{#if deleteError}
 					<p class="error" role="alert">{deleteError}</p>
 				{/if}
-				<button type="submit" class="destructive" disabled={deleting}>
-					{deleting ? 'Deleting…' : 'Delete my account'}
-				</button>
+				<button type="submit" class="destructive">Delete my account</button>
 			</form>
 		</section>
 	{/if}
 </main>
+
+{#if pending && copy}
+	<ConfirmDialog
+		open
+		title={copy.title}
+		confirmLabel={copy.confirmLabel}
+		busyLabel={copy.busyLabel}
+		destructive={copy.destructive}
+		busy={running}
+		onConfirm={() => void run()}
+		onCancel={() => (pending = null)}
+	>
+		{#if pending.kind === 'sign-out'}
+			<p>
+				You'll need to sign in again to save photos to your account. Anything you've
+				already saved stays in your gallery.
+			</p>
+		{:else if pending.kind === 'resend-verification'}
+			<p>We'll email a fresh verification link to {user?.email}.</p>
+		{:else if pending.kind === 'change-email'}
+			<p>
+				We'll email a confirmation link to {pending.newEmail}. Your address only changes
+				once you follow it.
+			</p>
+		{:else if pending.kind === 'change-password'}
+			<p>You'll stay signed in here, but your other devices will be signed out.</p>
+		{:else if pending.kind === 'set-password'}
+			<p>This adds a password to your account so you can sign in without Google.</p>
+		{:else if pending.kind === 'delete-account'}
+			<p>
+				Your account and every photo saved to it will be deleted for good. This cannot be
+				undone.
+			</p>
+		{/if}
+	</ConfirmDialog>
+{/if}
 
 <style>
 	.settings {
@@ -516,13 +636,6 @@
 
 	.destructive:hover {
 		background: color-mix(in srgb, var(--danger) 85%, black);
-	}
-
-	.primary:disabled,
-	.secondary:disabled,
-	.destructive:disabled {
-		opacity: 0.6;
-		cursor: default;
 	}
 
 	.empty {

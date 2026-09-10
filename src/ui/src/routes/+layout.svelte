@@ -6,15 +6,24 @@
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import UserMenu from '$lib/components/UserMenu.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ToastRegion from '$lib/toasts/ToastRegion.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 	import "$lib/css/fonts.css"
 	
 	let { children } = $props();
 	let drawerOpen = $state(false);
+	let signOutPending = $state(false);
+	let signingOut = $state(false);
 
 	function closeDrawer() {
 		drawerOpen = false;
+	}
+
+	/** Signing out is confirmed first; the dialog asks before the session ends. */
+	function requestSignOut() {
+		closeDrawer();
+		signOutPending = true;
 	}
 
 	onMount(() => {
@@ -36,7 +45,7 @@
 	}
 
 	async function signOut() {
-		closeDrawer();
+		signingOut = true;
 		try {
 			await api.logout();
 			auth.clear();
@@ -44,6 +53,9 @@
 			goto('/');
 		} catch (e) {
 			toastStore.error(e instanceof ApiError ? e.message : 'Could not sign out. Please retry.');
+		} finally {
+			signingOut = false;
+			signOutPending = false;
 		}
 	}
 </script>
@@ -52,7 +64,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<header class="topbar">
+<header class="topbar" inert={signOutPending}>
 	<div class="bar-inner">
 		<a href="/" class="brand">
 			<img class="brand-mark" src={brand} alt="Chewables home" />
@@ -70,7 +82,7 @@
 			</nav>
 			{#if auth.user}
 				<div class="account">
-					<UserMenu user={auth.user} onSignOut={signOut} />
+					<UserMenu user={auth.user} onSignOut={requestSignOut} />
 				</div>
 			{/if}
 			<button
@@ -96,7 +108,13 @@
 	onclick={closeDrawer}
 ></button>
 
-<div class="drawer" id="site-drawer" class:open={drawerOpen} aria-hidden={!drawerOpen}>
+<div
+	class="drawer"
+	id="site-drawer"
+	class:open={drawerOpen}
+	aria-hidden={!drawerOpen}
+	inert={signOutPending}
+>
 	<div class="drawer-header">
 		<button
 			type="button"
@@ -114,7 +132,7 @@
 			<a href="/photos" onclick={closeDrawer}>Photos</a>
 			<a href="/profile" onclick={closeDrawer}>My profile</a>
 			<a href="/settings" onclick={closeDrawer}>Settings</a>
-			<button type="button" class="link" onclick={signOut}>Sign out</button>
+			<button type="button" class="link" onclick={requestSignOut}>Sign out</button>
 		{:else}
 			<a href="/#faq" onclick={closeDrawer}>FAQ</a>
 			<a href="/#about" onclick={closeDrawer}>About</a>
@@ -125,7 +143,26 @@
 
 <ToastRegion />
 
-{@render children()}
+<div class="page" inert={signOutPending}>
+	{@render children()}
+</div>
+
+{#if signOutPending}
+	<ConfirmDialog
+		open
+		title="Sign out?"
+		confirmLabel="Sign out"
+		busyLabel="Signing out…"
+		busy={signingOut}
+		onConfirm={() => void signOut()}
+		onCancel={() => (signOutPending = false)}
+	>
+		<p>
+			You'll need to sign in again to save photos to your account. Anything you've already
+			saved stays in your gallery.
+		</p>
+	</ConfirmDialog>
+{/if}
 
 <svelte:window onkeydown={handleKeydown} />
 

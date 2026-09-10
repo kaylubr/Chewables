@@ -3,6 +3,7 @@ import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
+import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { SavedPhoto } from "@chewable/shared";
 
@@ -15,26 +16,15 @@ let deleting = $state<string | null>(null);
 // Deletion is permanent (row + stored object both go), so it goes through a
 // confirm step instead of firing on the first click.
 let pendingDelete = $state<DisplayPhoto | null>(null);
-let keepButton = $state<HTMLButtonElement | undefined>();
 let heading = $state<HTMLHeadingElement | undefined>();
-// The element to hand focus back to when the confirm closes.
-let returnFocus: HTMLElement | null = null;
 
 function requestRemove(photo: DisplayPhoto) {
-	returnFocus = document.activeElement as HTMLElement | null;
 	pendingDelete = photo;
 }
 
 function closeConfirm() {
 	pendingDelete = null;
-	returnFocus?.focus();
-	returnFocus = null;
 }
-
-// Move focus to the least destructive action when the confirm opens.
-$effect(() => {
-	if (pendingDelete) keepButton?.focus();
-});
 
 async function load() {
 	loadFailed = false;
@@ -70,7 +60,6 @@ async function confirmRemove() {
 	const photo = pendingDelete;
 	if (!auth.isAuthenticated || !photo) return;
 	pendingDelete = null;
-	returnFocus = null;
 	deleting = photo.id;
 	try {
 		await api.deletePhoto(photo.id);
@@ -134,40 +123,28 @@ onMount(() => {
 </main>
 
 {#if pendingDelete}
-	<div class="modal-backdrop">
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
-			<h2 id="delete-title">Delete this photo?</h2>
-			<p>
-				{#if pendingDelete.frame}
-					The {pendingDelete.frame.toLowerCase()} photo from{' '}
-				{:else}
-					This photo from{' '}
-				{/if}
-				{new Date(pendingDelete.createdAt).toLocaleDateString()} will be deleted for
-				good. This cannot be undone.
-			</p>
-			<div class="modal-actions">
-				<button
-					type="button"
-					class="secondary"
-					bind:this={keepButton}
-					onclick={closeConfirm}
-				>
-					Keep it
-				</button>
-				<button type="button" class="destructive" onclick={() => void confirmRemove()}>
-					Delete photo
-				</button>
-			</div>
-		</div>
-	</div>
+	<ConfirmDialog
+		open
+		title="Delete this photo?"
+		confirmLabel="Delete photo"
+		cancelLabel="Keep it"
+		destructive
+		busy={deleting !== null}
+		busyLabel="Deleting…"
+		onConfirm={() => void confirmRemove()}
+		onCancel={closeConfirm}
+	>
+		<p>
+			{#if pendingDelete.frame}
+				The {pendingDelete.frame.toLowerCase()} photo from{' '}
+			{:else}
+				This photo from{' '}
+			{/if}
+			{new Date(pendingDelete.createdAt).toLocaleDateString()} will be deleted for
+			good. This cannot be undone.
+		</p>
+	</ConfirmDialog>
 {/if}
-
-<svelte:window
-	onkeydown={(e) => {
-		if (e.key === 'Escape' && pendingDelete) closeConfirm();
-	}}
-/>
 
 <style>
 	.gallery {
@@ -290,72 +267,6 @@ onMount(() => {
 			width: 2.75rem;
 			height: 2.75rem;
 			font-size: 1.5rem;
-		}
-	}
-
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		background: rgb(0 0 0 / 0.45);
-		padding: 1.5rem;
-		z-index: 50;
-	}
-	.modal {
-		width: min(26rem, 100%);
-		padding: 1.5rem;
-		border: 1px solid var(--line-strong);
-		border-radius: 0.75rem;
-		background: var(--surface);
-		color: var(--ink);
-		box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
-	}
-	.modal h2 {
-		margin: 0 0 0.5rem;
-		font-size: var(--text-xl);
-	}
-	.modal p {
-		margin: 0;
-		color: var(--ink-soft);
-		font-size: var(--text-sm);
-	}
-	.modal-actions {
-		display: flex;
-		gap: 0.75rem;
-		justify-content: flex-end;
-		flex-wrap: wrap;
-		margin-top: 1.25rem;
-	}
-	.modal-actions .secondary {
-		margin-top: 0;
-		background: none;
-		border: 1px solid var(--line-strong);
-		color: var(--ink);
-	}
-	.modal-actions .secondary:hover {
-		border-color: var(--ember);
-		color: var(--ember);
-		background: none;
-	}
-	.destructive {
-		background: var(--danger);
-		color: #fff;
-		border: none;
-		border-radius: 0.5rem;
-		padding: 0.6rem 1.2rem;
-		font-family: var(--font-mono);
-		font-size: var(--text-sm);
-		font-weight: 650;
-		cursor: pointer;
-	}
-	.destructive:hover {
-		background: color-mix(in srgb, var(--danger) 85%, black);
-	}
-	@media (pointer: coarse) {
-		.modal-actions .secondary,
-		.destructive {
-			min-height: 44px;
 		}
 	}
 </style>

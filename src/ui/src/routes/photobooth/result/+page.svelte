@@ -2,6 +2,7 @@
 import { goto } from "$app/navigation";
 import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
+import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import { downloadDataUrl, photoFilename } from "$lib/photobooth/download";
 import { booth } from "$lib/photobooth/store.svelte";
 import { toastStore } from "$lib/toasts/toasts.svelte";
@@ -11,6 +12,7 @@ const frame = booth.frame;
 
 let saving = $state(false);
 let showSignInPrompt = $state(false);
+let confirmSave = $state(false);
 
 function download() {
 	if (!resultUrl) return;
@@ -26,12 +28,17 @@ function dataUrlToBlob(url: string): Blob {
 	return new Blob([bytes], { type: mime });
 }
 
-async function save() {
+function save() {
 	if (!auth.isAuthenticated) {
 		// Saving requires an account; warn that leaving loses the in-memory result.
 		showSignInPrompt = true;
 		return;
 	}
+	if (!resultUrl || !frame) return;
+	confirmSave = true;
+}
+
+async function runSave() {
 	if (!resultUrl || !frame) return;
 	saving = true;
 	try {
@@ -47,6 +54,7 @@ async function save() {
 		);
 	} finally {
 		saving = false;
+		confirmSave = false;
 	}
 }
 
@@ -66,7 +74,7 @@ function startOver() {
 	<title>Your photo</title>
 </svelte:head>
 
-<main class="result-page">
+<main class="result-page" inert={confirmSave}>
 	{#if resultUrl}
 		<h1>Your photo is ready</h1>
 		<img
@@ -77,14 +85,8 @@ function startOver() {
 		/>
 		<div class="actions">
 			<button type="button" class="primary" onclick={download}>Download</button>
-			<button type="button" class="secondary" onclick={() => void save()} disabled={saving}>
-				{#if saving}
-					Saving…
-				{:else if auth.isAuthenticated}
-					Save to my photos
-				{:else}
-					Save to account
-				{/if}
+			<button type="button" class="secondary" onclick={save}>
+				{auth.isAuthenticated ? 'Save to my photos' : 'Save to account'}
 			</button>
 			<button type="button" class="ghost" onclick={startOver}>Take another</button>
 		</div>
@@ -107,6 +109,22 @@ function startOver() {
 			<button type="button" class="primary" onclick={confirmSignIn}>Sign in to save</button>
 		</div>
 	</div>
+{/if}
+
+{#if confirmSave}
+	<ConfirmDialog
+		open
+		title="Save this photo?"
+		confirmLabel="Save photo"
+		busyLabel="Saving…"
+		busy={saving}
+		onConfirm={() => void runSave()}
+		onCancel={() => (confirmSave = false)}
+	>
+		<p>
+			It'll be added to your photos, where you can download or delete it later.
+		</p>
+	</ConfirmDialog>
 {/if}
 
 <style>
