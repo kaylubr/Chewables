@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { toastStore } from './toasts.sveltection clearToasts() {
+import { toastStore } from './toasts.svelte';
+
+function clearToasts() {
 	for (const t of toastStore.toasts) toastStore.dismiss(t.id);
 }
 
