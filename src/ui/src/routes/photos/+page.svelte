@@ -12,6 +12,29 @@ let photos = $state<DisplayPhoto[]>([]);
 let loading = $state(true);
 let loadFailed = $state(false);
 let deleting = $state<string | null>(null);
+// Deletion is permanent (row + stored object both go), so it goes through a
+// confirm step instead of firing on the first click.
+let pendingDelete = $state<DisplayPhoto | null>(null);
+let keepButton = $state<HTMLButtonElement | undefined>();
+let heading = $state<HTMLHeadingElement | undefined>();
+// The element to hand focus back to when the confirm closes.
+let returnFocus: HTMLElement | null = null;
+
+function requestRemove(photo: DisplayPhoto) {
+	returnFocus = document.activeElement as HTMLElement | null;
+	pendingDelete = photo;
+}
+
+function closeConfirm() {
+	pendingDelete = null;
+	returnFocus?.focus();
+	returnFocus = null;
+}
+
+// Move focus to the least destructive action when the confirm opens.
+$effect(() => {
+	if (pendingDelete) keepButton?.focus();
+});
 
 async function load() {
 	loadFailed = false;
@@ -43,13 +66,18 @@ async function load() {
 	}
 }
 
-async function remove(id: string) {
-	if (!auth.isAuthenticated) return;
-	deleting = id;
+async function confirmRemove() {
+	const photo = pendingDelete;
+	if (!auth.isAuthenticated || !photo) return;
+	pendingDelete = null;
+	returnFocus = null;
+	deleting = photo.id;
 	try {
-		await api.deletePhoto(id);
-		photos = photos.filter((p) => p.id !== id);
+		await api.deletePhoto(photo.id);
+		photos = photos.filter((p) => p.id !== photo.id);
 		toastStore.success("Photo deleted.");
+		// The trigger tile is gone, so hand focus to the section heading.
+		heading?.focus();
 	} catch (e) {
 		toastStore.error(
 			e instanceof ApiError ? e.message : "Could not delete the photo.",
@@ -68,8 +96,8 @@ onMount(() => {
 	<title>Photos</title>
 </svelte:head>
 
-<main class="gallery">
-	<h1>Photos</h1>
+<main class="gallery" inert={pendingDelete !== null}>
+	<h1 bind:this={heading} tabindex="-1">Photos</h1>
 
 	{#if loading}
 		<p class="empty">Loading…</p>
@@ -94,7 +122,7 @@ onMount(() => {
 						type="button"
 						class="delete"
 						aria-label={`Delete photo from ${photo.createdAt}`}
-						onclick={() => void remove(photo.id)}
+						onclick={() => requestRemove(photo)}
 						disabled={deleting === photo.id}
 					>
 						{deleting === photo.id ? '…' : '×'}
@@ -104,6 +132,42 @@ onMount(() => {
 		</div>
 	{/if}
 </main>
+
+{#if pendingDelete}
+	<div class="modal-backdrop">
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+			<h2 id="delete-title">Delete this photo?</h2>
+			<p>
+				{#if pendingDelete.frame}
+					The {pendingDelete.frame.toLowerCase()} photo from{' '}
+				{:else}
+					This photo from{' '}
+				{/if}
+				{new Date(pendingDelete.createdAt).toLocaleDateString()} will be deleted for
+				good. This cannot be undone.
+			</p>
+			<div class="modal-actions">
+				<button
+					type="button"
+					class="secondary"
+					bind:this={keepButton}
+					onclick={closeConfirm}
+				>
+					Keep it
+				</button>
+				<button type="button" class="destructive" onclick={() => void confirmRemove()}>
+					Delete photo
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && pendingDelete) closeConfirm();
+	}}
+/>
 
 <style>
 	.gallery {
@@ -223,9 +287,75 @@ onMount(() => {
 	@media (pointer: coarse) {
 		.delete {
 			opacity: 1;
-			width: 2.5rem;
-			height: 2.5rem;
+			width: 2.75rem;
+			height: 2.75rem;
 			font-size: 1.5rem;
+		}
+	}
+
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		background: rgb(0 0 0 / 0.45);
+		padding: 1.5rem;
+		z-index: 50;
+	}
+	.modal {
+		width: min(26rem, 100%);
+		padding: 1.5rem;
+		border: 1px solid var(--line-strong);
+		border-radius: 0.75rem;
+		background: var(--surface);
+		color: var(--ink);
+		box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+	}
+	.modal h2 {
+		margin: 0 0 0.5rem;
+		font-size: var(--text-xl);
+	}
+	.modal p {
+		margin: 0;
+		color: var(--ink-soft);
+		font-size: var(--text-sm);
+	}
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		margin-top: 1.25rem;
+	}
+	.modal-actions .secondary {
+		margin-top: 0;
+		background: none;
+		border: 1px solid var(--line-strong);
+		color: var(--ink);
+	}
+	.modal-actions .secondary:hover {
+		border-color: var(--ember);
+		color: var(--ember);
+		background: none;
+	}
+	.destructive {
+		background: var(--danger);
+		color: #fff;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.6rem 1.2rem;
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-weight: 650;
+		cursor: pointer;
+	}
+	.destructive:hover {
+		background: color-mix(in srgb, var(--danger) 85%, black);
+	}
+	@media (pointer: coarse) {
+		.modal-actions .secondary,
+		.destructive {
+			min-height: 44px;
 		}
 	}
 </style>

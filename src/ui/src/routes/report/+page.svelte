@@ -4,7 +4,11 @@
 
 <main class="report-page">
 	<h1>Report an issue</h1>
-	<p class="sub">The reporting form is coming soon. For now, email hello@example.com or file an issue on GitHub.</p>
+	<p class="sub">
+		The reporting form is coming soon. For now, email
+		<a href="mailto:kbreyes.dev@gmail.com">kbreyes.dev@gmail.com</a> or file an issue on
+		<a href="https://github.com/kaylubr/chewables/issues">GitHub</a>.
+	</p>
 </main>
 
 <style>

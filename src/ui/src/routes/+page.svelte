@@ -62,7 +62,7 @@
 				Make the moment yours.
 			</h1>
 			<p class="lede">
-				Frame the moments that matter!
+				A photobooth in your browser. Pick a frame, take a few shots, keep the strip.
 			</p>
 			<a class="cta" href="/photobooth/frame">
 				Start the photobooth
@@ -72,20 +72,20 @@
 
 	<section class="process" aria-labelledby="process-heading">
 		<div class="process-inner">
-			<h2 id="process-heading" class="section-title">How it works</h2>
+			<div class="process-head">
+				<h2 id="process-heading" class="section-title">How it works</h2>
+				<p class="process-intro">Three steps, all in your browser. No app, no upload until you choose to save.</p>
+			</div>
 			<ol class="steps">
 				<li>
-					<span class="step-no">01</span>
 					<h3>Choose a frame</h3>
 					<p>Each frame needs a set number of photos.</p>
 				</li>
 				<li>
-					<span class="step-no">02</span>
 					<h3>Take the photos</h3>
 					<p>The camera counts you down between each shot.</p>
 				</li>
 				<li>
-					<span class="step-no">03</span>
 					<h3>Download it</h3>
 					<p>Your finished photo is composed in your browser. Download it, or save it to your gallery if you want to keep it.</p>
 				</li>
@@ -173,8 +173,8 @@
 		padding: 2rem;
 	}
 	.hero-inner {
-		flex-direction: column;
-		align-items: center;
+		display: grid;
+		justify-items: center;
 		gap: 1.5rem;
 		max-width: 72rem;
 		margin: 0 auto;
@@ -184,23 +184,34 @@
 	.marquee {
 		font-family: var(--font-display);
 		font-weight: 800;
-		font-size: clamp(4.5rem, 16vw, 10rem);
+		font-size: clamp(3.6rem, 12vw, 8rem);
 		line-height: 0.95;
 		letter-spacing: -0.03em;
 		color: var(--mustard);
 		text-wrap: balance;
 		user-select: none;
 		max-width: none;
-		margin-bottom: 5rem;
+		margin: 0;
 	}
 	.lede {
-		font-size: clamp(0.9rem, 3.2vw, 2rem);
+		font-size: clamp(0.9rem, 2.4vw, 1.4rem);
 		text-align: center;
 		line-height: 1.6;
 		font-weight: bolder;
 		color: #fff;
-		max-width: 36rem;
-		margin: 0 auto;
+		max-width: 38rem;
+		margin: 0;
+	}
+	/* Off-center the hero on wide screens: the marquee and copy hold the left
+	   edge instead of stacking down the middle. */
+	@media (min-width: 900px) {
+		.hero-inner {
+			justify-items: start;
+			text-align: left;
+		}
+		.lede {
+			text-align: left;
+		}
 	}
 	.cta {
 		display: inline-block;
@@ -276,37 +287,60 @@
 		font-weight: 700;
 		font-size: clamp(1.9rem, 3.5vw, 2.6rem);
 		letter-spacing: -0.01em;
-		margin: 0 0 2.5rem;
+		margin: 0 0 1.25rem;
 		color: var(--charcoal);
-		text-align: center;
+		text-align: left;
+	}
+	/* How-it-works becomes an editorial pair: the heading holds the left rail,
+	   the steps run down the right with hairline separators. */
+	.process-inner {
+		max-width: 72rem;
+		margin: 0 auto;
+		padding: 4rem 1.5rem;
+		color: var(--crimson);
+		display: grid;
+		gap: 2rem;
+	}
+	.process-intro {
+		margin: 0;
+		max-width: 32ch;
+		color: var(--ink-soft);
+		font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+		line-height: 1.6;
 	}
 	.steps {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 2.5rem;
-		text-align: center;
 	}
-	.step-no {
-		font-size: clamp(0.8rem, 1.4vw, 1.2rem);
-		color: var(--crimson);
-		letter-spacing: 0.12em;
+	.steps li {
+		padding: 1.4rem 0;
+		border-top: 1px solid var(--line);
 	}
 	.steps h3 {
-		font-weight: bolder;
-		font-size: clamp(1rem, 1.9vw, 1.5rem);
-		margin: 0.5rem 0 0.4rem;
+		font-weight: 700;
+		font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+		margin: 0 0 0.35rem;
 		color: var(--charcoal);
 	}
 	.steps p {
 		margin: 0;
 		color: var(--ink-soft);
-		font-size: clamp(0.82rem, 1.2vw, 1.2rem);
-		font-weight: 700;
+		font-size: clamp(0.85rem, 1.1vw, 1.05rem);
 		line-height: 1.55;
-		text-align: center;
+		max-width: 54ch;
+	}
+	@media (min-width: 900px) {
+		.process-inner {
+			grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+			gap: 4rem;
+			align-items: start;
+		}
+		.steps li:first-child {
+			border-top: none;
+			padding-top: 0;
+		}
 	}
 	.accordion {
 		display: grid;
@@ -416,11 +450,7 @@
 	}
 	@media (max-width: 780px) {
 		.marquee {
-			font-size: clamp(3.6rem, 18vw, 7rem);
-		}
-		.steps {
-			grid-template-columns: 1fr;
-			gap: 2rem;
+			font-size: clamp(3rem, 15vw, 6rem);
 		}
 		.about-bottom {
 			grid-template-columns: 1fr;

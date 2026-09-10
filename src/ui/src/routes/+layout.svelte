@@ -131,12 +131,18 @@
 
 <style>
 	:global(:focus-visible) {
-		outline: 2px solid var(--mustard);
+		/* Two-tone ring: the charcoal outline reads on light surfaces, the
+		   mustard halo reads on the crimson bar. One of the two always clears
+		   3:1, so focus is visible wherever it lands. */
+		outline: 2px solid var(--focus-ring);
 		outline-offset: 2px;
+		box-shadow: 0 0 0 4px var(--focus-halo);
 	}
 	:global(html) {
-		--crimson: #c31b1b;
-		--crimson-deep: #9e1212;
+		/* #a51212 keeps mustard-on-crimson at 4.74:1 (AA for body text) while
+		   staying the same crimson lane; the old #c31b1b measured 3.66:1. */
+		--crimson: #a51212;
+		--crimson-deep: #8f1010;
 		--mustard: #f5c400;
 		--mustard-deep: #d9ad00;
 		--paper: #fafafa;
@@ -152,6 +158,8 @@
 		--danger-bg: #fce9e7;
 		--danger-line: #f0c4c0;
 		--success: #1e7d32;
+		--focus-ring: var(--charcoal);
+		--focus-halo: color-mix(in srgb, var(--mustard) 70%, transparent);
 		--focus: var(--mustard);
 
 		--stage: #14100c;
@@ -164,13 +172,15 @@
 		--font-ui: 'Philosopher', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 		--font-mono: 'Lustria', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+		/* Ramp rebuilt on a 1.3+ step so adjacent levels read apart; the old
+		   lg/xl/2xl (1.125 / 1.22 / 1.27) all fell below the minimum. */
 		--text-xs: 0.75rem;
 		--text-sm: 0.875rem;
 		--text-base: 1rem;
-		--text-lg: 1.125rem;
-		--text-xl: 1.375rem;
-		--text-2xl: 1.75rem;
-		--text-3xl: 2.25rem;
+		--text-lg: 1.3rem;
+		--text-xl: 1.7rem;
+		--text-2xl: 2.25rem;
+		--text-3xl: 3rem;
 
 		--ink: var(--charcoal);
 		--ember: var(--crimson);

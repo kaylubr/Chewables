@@ -68,7 +68,7 @@ function startOver() {
 
 <main class="result-page">
 	{#if resultUrl}
-		<h1>Here's your photo!</h1>
+		<h1>Your photo is ready</h1>
 		<img
 			class="result"
 			src={resultUrl}
