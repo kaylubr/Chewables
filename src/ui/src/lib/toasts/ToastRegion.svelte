@@ -3,40 +3,26 @@
 	import { fade, fly } from 'svelte/transition';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 
-	// Sit just below the sticky header, whose height varies (10vh brand mark
-	// on wide screens, 2rem on mobile), then leave an 8px breathing gap.
-	let top = $state(0);
 	let prefersReduced = $state(false);
 
 	const motion = $derived(
 		prefersReduced
 			? { y: 0, flyMs: 0, fadeMs: 0 }
-			: { y: -10, flyMs: 220, fadeMs: 160 }
+			: { y: 10, flyMs: 220, fadeMs: 160 }
 	);
 
 	onMount(() => {
-		const header = document.querySelector<HTMLElement>('header.topbar');
-		if (!header) return;
-		const measure = () => {
-			top = Math.round(header.getBoundingClientRect().bottom) + 8;
-		};
-		measure();
-		const observer = new ResizeObserver(measure);
-		observer.observe(header);
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 		const onReduced = () => {
 			prefersReduced = reduced.matches;
 		};
 		onReduced();
 		reduced.addEventListener('change', onReduced);
-		return () => {
-			observer.disconnect();
-			reduced.removeEventListener('change', onReduced);
-		};
+		return () => reduced.removeEventListener('change', onReduced);
 	});
 </script>
 
-<div class="toast-region" style:top="{top}px">
+<div class="toast-region">
 	{#each toastStore.toasts as t (t.id)}
 		<div
 			class="toast"
@@ -63,6 +49,7 @@
 	.toast-region {
 		position: fixed;
 		right: calc(1rem + env(safe-area-inset-right));
+		bottom: calc(1rem + env(safe-area-inset-bottom));
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
