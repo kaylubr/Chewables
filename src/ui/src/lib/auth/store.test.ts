@@ -7,6 +7,8 @@ const U1 = {
 	username: "alice",
 	emailVerified: true,
 	image: null,
+	createdAt: "2026-01-01T00:00:00.000Z",
+	hasPassword: true,
 };
 const U2 = {
 	id: "u2",
@@ -14,6 +16,8 @@ const U2 = {
 	username: "bob",
 	emailVerified: true,
 	image: null,
+	createdAt: "2026-01-01T00:00:00.000Z",
+	hasPassword: true,
 };
 
 describe("auth store", () => {

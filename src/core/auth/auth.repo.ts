@@ -1,4 +1,4 @@
-import { eq, or } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 
 export interface UserRow {
@@ -34,6 +34,20 @@ export async function findByUsernameOrEmail(identifier: string): Promise<UserRow
 		.where(or(eq(schema.users.username, identifier), eq(schema.users.email, identifier.toLowerCase())))
 		.limit(1);
 	return rows[0] ? toUserRow(rows[0]) : null;
+}
+
+/**
+ * Whether the user has a password credential. Accounts created through a
+ * social provider start without one, which decides whether Settings offers
+ * "change password" or "set a password".
+ */
+export async function hasPasswordAccount(userId: string): Promise<boolean> {
+	const rows = await db
+		.select({ password: schema.account.password })
+		.from(schema.account)
+		.where(and(eq(schema.account.userId, userId), eq(schema.account.providerId, 'credential')))
+		.limit(1);
+	return Boolean(rows[0]?.password);
 }
 
 function toUserRow(row: typeof schema.users.$inferSelect): UserRow {

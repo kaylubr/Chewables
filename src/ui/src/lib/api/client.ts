@@ -84,6 +84,31 @@ export const api = {
 			body: JSON.stringify({ email, callbackURL }),
 		});
 	},
+	changePassword: (currentPassword: string, newPassword: string) =>
+		request<{ status: boolean }>("/api/auth/change-password", {
+			method: "POST",
+			body: JSON.stringify({ currentPassword, newPassword }),
+		}),
+	setPassword: (newPassword: string) =>
+		request<{ status: boolean }>("/api/auth/set-password", {
+			method: "POST",
+			body: JSON.stringify({ newPassword }),
+		}),
+	changeEmail: (newEmail: string) =>
+		request<{ status: boolean }>("/api/auth/change-email", {
+			method: "POST",
+			body: JSON.stringify({ newEmail }),
+		}),
+	confirmEmailChange: () =>
+		request<{ changed: boolean }>("/api/auth/confirm-email-change", {
+			method: "POST",
+			body: JSON.stringify({}),
+		}),
+	deleteAccount: (username: string, password?: string) =>
+		request<{ status: boolean }>("/api/auth/delete-account", {
+			method: "POST",
+			body: JSON.stringify({ username, password }),
+		}),
 	uploadPhoto: (frame: string, blob: Blob) => {
 		const form = new FormData();
 		form.append("frame", frame);

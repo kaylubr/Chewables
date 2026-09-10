@@ -46,6 +46,10 @@ onMount(async () => {
 				>
 					{showEmail ? user.email : 'Show email'}
 				</button>
+				{#if !user.emailVerified}
+					<!-- Presentation only: the resend lives in Settings. -->
+					<a class="verify-badge" href="/settings">Email not verified</a>
+				{/if}
 			</div>
 		</header>
 	{/if}
@@ -116,6 +120,23 @@ onMount(async () => {
 	}
 
 	.email-toggle:hover {
+		color: var(--ember);
+	}
+
+	.verify-badge {
+		justify-self: start;
+		padding: 0.15rem 0.55rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--mustard) 30%, transparent);
+		color: var(--ink-soft);
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		text-decoration: none;
+	}
+
+	.verify-badge:hover {
 		color: var(--ember);
 	}
 

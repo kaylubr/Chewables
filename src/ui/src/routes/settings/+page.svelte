@@ -1,12 +1,77 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { ApiError } from '$lib/api/client';
+	import { page } from '$app/state';
+	import type { AuthUser } from '@chewable/shared';
+	import Avatar from '$lib/components/Avatar.svelte';
+	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 
+	// Snapshot of the session user for the template, so Svelte can narrow it
+	// after the auth gate.
+	let user = $state<AuthUser | null>(null);
+
+	// Email
+	let newEmail = $state('');
+	let emailSubmitting = $state(false);
 	let resending = $state(false);
-	let user = $state<import('@chewable/shared').AuthUser | null>(null);
+
+	// Password
+	let currentPassword = $state('');
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	let passwordSubmitting = $state(false);
+
+	// Delete account
+	let confirmUsername = $state('');
+	let deletePassword = $state('');
+	let deleting = $state(false);
+	let deleteError = $state('');
+
+	onMount(async () => {
+		const loaded = await auth.ensureSession();
+		if (!loaded) {
+			goto('/login');
+			return;
+		}
+		if (page.url.searchParams.get('email_changed') === '1') {
+			await confirmEmailChange();
+		}
+		user = auth.user;
+	});
+
+	/**
+	 * The landing page for a confirmed email change. The server decides whether
+	 * anything actually completed — a bare visit to this URL is inert — and
+	 * drops the user's other sessions when it did.
+	 */
+	async function confirmEmailChange() {
+		try {
+			const { changed } = await api.confirmEmailChange();
+			await auth.ensureSession();
+			if (changed) {
+				toastStore.success('Your new email is confirmed.');
+			}
+		} catch (e) {
+			toastStore.error(
+				e instanceof ApiError ? e.message : 'Could not confirm your email change.',
+			);
+		} finally {
+			// Drop the query param so a reload doesn't replay the confirmation.
+			goto('/settings', { replaceState: true });
+		}
+	}
+
+	function memberSince(iso: string): string {
+		const date = new Date(iso);
+		if (Number.isNaN(date.getTime())) return '';
+		return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+	}
+
+	function message(e: unknown, fallback: string): string {
+		return e instanceof ApiError ? e.message : fallback;
+	}
 
 	async function resendVerification() {
 		if (resending) return;
@@ -15,20 +80,95 @@
 			await auth.sendVerificationEmail();
 			toastStore.success('Verification email sent. Check your inbox.');
 		} catch (e) {
-			toastStore.error(e instanceof ApiError ? e.message : 'Could not send the email. Please retry.');
+			toastStore.error(message(e, 'Could not send the email. Please retry.'));
 		} finally {
 			resending = false;
 		}
 	}
 
-	onMount(async () => {
-		const loaded = await auth.ensureSession();
-		if (!loaded) {
-			goto('/login');
+	async function submitEmailChange() {
+		if (emailSubmitting) return;
+		emailSubmitting = true;
+		try {
+			await api.changeEmail(newEmail);
+			newEmail = '';
+			// Better Auth answers success even when the address is already
+			// taken, and nothing moves until the link is followed — so this can
+			// only ever ask the user to check their inbox.
+			toastStore.success('Check your inbox to verify your new email.');
+		} catch (e) {
+			toastStore.error(message(e, 'Could not start the email change. Please retry.'));
+		} finally {
+			emailSubmitting = false;
+		}
+	}
+
+	async function submitPassword() {
+		if (passwordSubmitting) return;
+		if (newPassword !== confirmPassword) {
+			toastStore.error('Passwords do not match.');
 			return;
 		}
-		user = loaded;
-	});
+		if (newPassword.length < 8) {
+			toastStore.error('Password must be at least 8 characters.');
+			return;
+		}
+		const hadPassword = user?.hasPassword ?? false;
+		passwordSubmitting = true;
+		try {
+			if (hadPassword) {
+				await api.changePassword(currentPassword, newPassword);
+			} else {
+				await api.setPassword(newPassword);
+			}
+			await auth.ensureSession();
+			user = auth.user;
+			currentPassword = '';
+			newPassword = '';
+			confirmPassword = '';
+			toastStore.success(hadPassword ? 'Password updated.' : 'Password set.');
+		} catch (e) {
+			toastStore.error(message(e, 'Could not update your password. Please retry.'));
+		} finally {
+			passwordSubmitting = false;
+		}
+	}
+
+	async function submitDelete() {
+		if (deleting) return;
+		deleteError = '';
+		if (confirmUsername !== user?.username) {
+			deleteError = 'Type your username exactly to confirm.';
+			return;
+		}
+		const hasPassword = user?.hasPassword ?? false;
+		if (hasPassword && !deletePassword) {
+			deleteError = 'Enter your password to delete this account.';
+			return;
+		}
+		deleting = true;
+		try {
+			await api.deleteAccount(confirmUsername, hasPassword ? deletePassword : undefined);
+			auth.clear();
+			toastStore.success('Your account was deleted.');
+			goto('/');
+		} catch (e) {
+			deleteError = message(e, 'Could not delete your account. Please retry.');
+		} finally {
+			deleting = false;
+		}
+	}
+
+	async function signOut() {
+		try {
+			await api.logout();
+			auth.clear();
+			toastStore.success('Signed out.');
+			goto('/');
+		} catch (e) {
+			toastStore.error(message(e, 'Could not sign out. Please retry.'));
+		}
+	}
 </script>
 
 <svelte:head>
@@ -38,16 +178,144 @@
 <main class="settings">
 	<h1>Settings</h1>
 
-	{#if user && !user.emailVerified}
-		<section class="verify" role="status">
-			<p>Verify your email to let Google sign-in link to your account.</p>
-			<button type="button" class="primary" onclick={resendVerification} disabled={resending}>
-				{resending ? 'Sending…' : 'Verify email'}
-			</button>
+	{#if !user}
+		<p class="empty">Loading…</p>
+	{:else}
+		<section class="card">
+			<h2>Account</h2>
+			<div class="identity">
+				<Avatar image={user.image} username={user.username} size="3.5rem" />
+				<div class="identity-text">
+					<p class="username">{user.username}</p>
+					<p class="email">{user.email}</p>
+					<p class="since">
+						{#if memberSince(user.createdAt)}
+							Member since {memberSince(user.createdAt)}
+						{:else}
+							&nbsp;
+						{/if}
+					</p>
+				</div>
+			</div>
+			<div class="actions">
+				<button type="button" class="secondary" onclick={signOut}>Sign out</button>
+			</div>
+		</section>
+
+		<section class="card">
+			<h2>Email</h2>
+			<p class="row">
+				<span class="row-value">{user.email}</span>
+				{#if user.emailVerified}
+					<span class="badge ok">Verified</span>
+				{:else}
+					<span class="badge warn">Not verified</span>
+				{/if}
+			</p>
+			{#if !user.emailVerified}
+				<p class="hint">
+					Verify your email to let Google sign-in link to your account.
+				</p>
+				<div class="actions">
+					<button type="button" class="secondary" onclick={resendVerification} disabled={resending}>
+						{resending ? 'Sending…' : 'Verify email'}
+					</button>
+				</div>
+			{/if}
+
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitEmailChange(); }}>
+				<label>
+					New email address
+					<input type="email" bind:value={newEmail} required autocomplete="email" />
+				</label>
+				<button type="submit" class="primary" disabled={emailSubmitting}>
+					{emailSubmitting ? 'Sending…' : 'Change email'}
+				</button>
+			</form>
+		</section>
+
+		<section class="card">
+			<h2>Password</h2>
+			{#if !user.hasPassword}
+				<p class="hint">
+					You signed up with Google, so this account has no password yet. Setting one
+					gives you a way back in without Google.
+				</p>
+			{/if}
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitPassword(); }}>
+				{#if user.hasPassword}
+					<label>
+						Current password
+						<input
+							type="password"
+							bind:value={currentPassword}
+							required
+							autocomplete="current-password"
+						/>
+					</label>
+				{/if}
+				<label>
+					New password
+					<input
+						type="password"
+						bind:value={newPassword}
+						required
+						minlength="8"
+						autocomplete="new-password"
+					/>
+				</label>
+				<label>
+					Confirm new password
+					<input
+						type="password"
+						bind:value={confirmPassword}
+						required
+						minlength="8"
+						autocomplete="new-password"
+					/>
+				</label>
+				<button type="submit" class="primary" disabled={passwordSubmitting}>
+					{user.hasPassword
+						? passwordSubmitting
+							? 'Updating…'
+							: 'Update password'
+						: passwordSubmitting
+							? 'Setting…'
+							: 'Set password'}
+				</button>
+			</form>
+		</section>
+
+		<section class="card danger">
+			<h2>Delete account</h2>
+			<p class="hint">
+				This permanently deletes your account and every photo saved to it. It cannot be
+				undone.
+			</p>
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitDelete(); }}>
+				<label>
+					Type <strong>{user.username}</strong> to confirm
+					<input type="text" bind:value={confirmUsername} autocomplete="off" />
+				</label>
+				{#if user.hasPassword}
+					<label>
+						Password
+						<input
+							type="password"
+							bind:value={deletePassword}
+							autocomplete="current-password"
+						/>
+					</label>
+				{/if}
+				{#if deleteError}
+					<p class="error" role="alert">{deleteError}</p>
+				{/if}
+				<button type="submit" class="destructive" disabled={deleting}>
+					{deleting ? 'Deleting…' : 'Delete my account'}
+				</button>
+			</form>
 		</section>
 	{/if}
-
-	<p class="empty">More settings coming soon.</p>
 </main>
 
 <style>
@@ -57,47 +325,184 @@
 		padding: 2.5rem 1.5rem 4rem;
 		font-family: var(--font-ui);
 		color: var(--ink);
+		display: grid;
+		gap: 1.5rem;
 	}
 
 	.settings h1 {
-		margin: 0 0 1rem;
+		margin: 0;
 		font-size: var(--text-2xl);
 	}
 
-	.verify {
-		padding: 1.25rem 1.25rem 1.5rem;
-		border: 1px solid var(--line-strong);
-		border-radius: 0.75rem;
-		background: var(--surface-2);
-		color: var(--ink);
-		display: grid;
-		justify-items: start;
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
+	.settings h2 {
+		margin: 0 0 1rem;
+		font-size: var(--text-lg);
 	}
 
-	.verify p {
+	.card {
+		padding: 1.5rem;
+		border: 1px solid var(--line-strong);
+		border-radius: 0.75rem;
+		background: var(--surface);
+	}
+
+	.card.danger {
+		border-color: var(--danger-line);
+		background: var(--danger-bg);
+	}
+
+	.identity {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.identity-text {
+		min-width: 0;
+	}
+
+	.username {
 		margin: 0;
+		font-weight: 700;
+		font-size: var(--text-lg);
+	}
+
+	.email {
+		margin: 0;
+		color: var(--ink-soft);
 		font-size: var(--text-sm);
+		overflow-wrap: anywhere;
+	}
+
+	.since {
+		margin: 0.25rem 0 0;
+		color: var(--ink-faint);
+		font-size: var(--text-xs);
+	}
+
+	.row {
+		margin: 0 0 0.75rem;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+
+	.row-value {
+		font-size: var(--text-sm);
+		overflow-wrap: anywhere;
+	}
+
+	.badge {
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.badge.ok {
+		background: color-mix(in srgb, var(--success) 12%, transparent);
+		color: var(--success);
+	}
+
+	.badge.warn {
+		background: color-mix(in srgb, var(--mustard) 30%, transparent);
+		color: var(--ink-soft);
+	}
+
+	.hint {
+		margin: 0 0 0.75rem;
+		color: var(--ink-soft);
+		font-size: var(--text-sm);
+	}
+
+	.error {
+		margin: 0;
+		color: var(--danger);
+		font-size: var(--text-sm);
+		font-weight: 600;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.stack {
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	label {
+		display: grid;
+		gap: 0.35rem;
+		font-weight: 600;
+		font-size: var(--text-sm);
+	}
+
+	input {
+		padding: 0.6rem 0.75rem;
+		border: 1px solid var(--line-strong);
+		border-radius: 0.5rem;
+		font-size: var(--text-base);
+		font-weight: 400;
+		background: var(--surface);
+		color: var(--ink);
+	}
+
+	input:focus {
+		border-color: var(--ember);
+	}
+
+	.primary,
+	.secondary,
+	.destructive {
+		padding: 0.7rem 1.3rem;
+		border-radius: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-weight: 650;
+		cursor: pointer;
+		justify-self: start;
 	}
 
 	.primary {
 		background: var(--ember);
 		color: #fff;
 		border: none;
-		border-radius: 0.5rem;
-		padding: 0.65rem 1.4rem;
-		font-family: var(--font-mono);
-		font-size: var(--text-base);
-		font-weight: 650;
-		cursor: pointer;
 	}
 
 	.primary:hover {
 		background: var(--ember-deep);
 	}
 
-	.primary:disabled {
+	.secondary {
+		background: none;
+		border: 1px solid var(--line-strong);
+		color: var(--ink);
+	}
+
+	.secondary:hover {
+		border-color: var(--ember);
+		color: var(--ember);
+	}
+
+	.destructive {
+		background: var(--danger);
+		color: #fff;
+		border: none;
+	}
+
+	.destructive:hover {
+		background: color-mix(in srgb, var(--danger) 85%, black);
+	}
+
+	.primary:disabled,
+	.secondary:disabled,
+	.destructive:disabled {
 		opacity: 0.6;
 		cursor: default;
 	}
@@ -106,5 +511,17 @@
 		margin: 0;
 		color: var(--ink-soft);
 		font-size: var(--text-sm);
+	}
+
+	@media (pointer: coarse) {
+		input {
+			padding-block: 0.8rem;
+			font-size: 1rem;
+		}
+		.primary,
+		.secondary,
+		.destructive {
+			min-height: 44px;
+		}
 	}
 </style>

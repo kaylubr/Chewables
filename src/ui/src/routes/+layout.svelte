@@ -113,6 +113,7 @@
 		{#if auth.isAuthenticated}
 			<a href="/photos" onclick={closeDrawer}>Photos</a>
 			<a href="/profile" onclick={closeDrawer}>My profile</a>
+			<a href="/settings" onclick={closeDrawer}>Settings</a>
 			<button type="button" class="link" onclick={signOut}>Sign out</button>
 		{:else}
 			<a href="/#faq" onclick={closeDrawer}>FAQ</a>
