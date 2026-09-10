@@ -3,7 +3,7 @@
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
-	import { toastStore } from '$lib/toasts.svelte';
+	import { toastStore } from '$lib/toasts/toasts.svelte';
 
 	let email = $state('');
 	let username = $state('');

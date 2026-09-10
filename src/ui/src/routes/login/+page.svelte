@@ -5,7 +5,7 @@
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
-	import { toastStore } from '$lib/toasts.svelte';
+	import { toastStore } from '$lib/toasts/toasts.svelte';
 
 	let username = $state('');
 	let password = $state('');
@@ -41,6 +41,9 @@
 		if (outcome.status === 'success') {
 			auth.setUser(outcome.user);
 			toastStore.success('Signed in.');
+			if (!outcome.user.emailVerified) {
+				toastStore.success('Verify your email to link your Google account.');
+			}
 			afterLogin();
 			return;
 		}

@@ -5,14 +5,23 @@
  * cookie; the app reads the current user from GET /api/auth/me. No token is
  * stored in localStorage; logout clears the session via the API.
  */
-import type { AuthUser } from '@chewable/shared';
-import { api } from '../api/client';
+import type { AuthUser } from "@chewable/shared";
+import { api } from "../api/client";
 
 class AuthStore {
 	user = $state<AuthUser | null>(null);
 
 	get isAuthenticated() {
 		return this.user !== null;
+	}
+
+	get verificationPending() {
+		return this.user !== null && !this.user.emailVerified;
+	}
+
+	sendVerificationEmail() {
+		if (!this.user) return;
+		return api.sendVerificationEmail(this.user.email);
 	}
 
 	async ensureSession(): Promise<AuthUser | null> {

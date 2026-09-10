@@ -1,13 +1,14 @@
 import request from 'supertest';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { app } from '../app.js';
 import { db, schema } from '../db/index.js';
+import * as mail from '../mail/mail.js';
 
-async function registerUser(res: request.Agent | request.SuperTest<request.Test>) {
+async function registerUser(res: request.Agent | request.SuperTest<request.Test>, email = 'user@example.com', username = 'user') {
 	return res.post('/api/auth/register').send({
-		email: 'user@example.com',
+		email,
 		password: 'password123',
-		username: 'user',
+		username,
 	});
 }
 
@@ -18,6 +19,73 @@ describe('auth endpoints', () => {
 		expect(resp.body.token_type).toBe('bearer');
 		expect(resp.body.user.email).toBe('user@example.com');
 		expect(resp.body.user.username).toBe('user');
+	});
+
+	it('returns emailVerified=false for a freshly registered user', async () => {
+		const resp = await registerUser(request(app));
+		expect(resp.status).toBe(201);
+		expect(resp.body.user.emailVerified).toBe(false);
+	});
+
+	it('still allows password login before email verification', async () => {
+		await registerUser(request(app));
+		const resp = await request(app).post('/api/auth/login').send({
+			username: 'user',
+			password: 'password123',
+		});
+		expect(resp.status).toBe(200);
+		expect(resp.body.user.emailVerified).toBe(false);
+	});
+
+	it('re-sends a verification email for an unverified account', async () => {
+		await registerUser(request(app));
+		const resp = await request(app)
+			.post('/api/auth/send-verification-email')
+			.send({ email: 'user@example.com' });
+		expect(resp.status).toBe(200);
+		expect(resp.body.status).toBe(true);
+	});
+
+	it('re-sends a verification email with a logged-in session (frontend flow)', async () => {
+		// Reproduces the exact request the browser sends from the photos page:
+		// an AUTOMATICALLY-SIGNED-IN register session cookie is attached, plus
+		// a raw callbackURL pointing at the SPA auth-popup page.
+		const agent = request.agent(app);
+		await agent.post('/api/auth/register').send({
+			email: 'resend-session@example.com',
+			password: 'password123',
+			username: 'resenduser',
+		});
+
+		const callbackURL =
+			'http://localhost:5173/auth-popup.html?api=http%3A%2F%2Flocalhost%3A8000&verify=1&next=%2Fphotos';
+
+		const resp = await agent
+			.post('/api/auth/send-verification-email')
+			.send({ email: 'resend-session@example.com', callbackURL });
+
+		expect(resp.status).toBe(200);
+		expect(resp.body.status).toBe(true);
+	});
+
+	it('resends to the session email even when the request body carries a mismatched email', async () => {
+		// Regression guard: Better Auth's own endpoint returns 400 EMAIL_MISMATCH
+		// when a logged-in session posts a different email. Our wrapper routes the
+		// resend to the session user's own address, so a stale client email can
+		// never produce a 400.
+		const agent = request.agent(app);
+		await agent.post('/api/auth/register').send({
+			email: 'session-owner@example.com',
+			password: 'password123',
+			username: 'sessionowner',
+		});
+
+		const resp = await agent
+			.post('/api/auth/send-verification-email')
+			.send({ email: 'someone-else@example.com' });
+
+		expect(resp.status).toBe(200);
+		expect(resp.body.status).toBe(true);
 	});
 
 	it('does not store the password in plaintext', async () => {
@@ -131,5 +199,34 @@ describe('auth endpoints', () => {
 			password: 'password123',
 		});
 		expect(resp.status).toBe(422);
+	});
+
+	it('verifies the email via the token endpoint and flips emailVerified', async () => {
+		// Capture the token Better-Auth generates for the verification email.
+		let verifyUrl = '';
+		const sendSpy = vi.spyOn(mail, 'sendVerificationEmail').mockImplementation(async ({ verifyUrl: url }) => {
+			verifyUrl = url;
+		});
+
+		const agent = request.agent(app);
+		await agent.post('/api/auth/register').send({
+			email: 'verify-me@example.com',
+			password: 'password123',
+			username: 'verifyuser',
+		});
+
+		expect(verifyUrl).toContain('/api/auth/verify-email?token=');
+		const token = new URL(verifyUrl).searchParams.get('token');
+		expect(token).toBeTruthy();
+
+		const resp = await agent.get(`/api/auth/verify-email?token=${encodeURIComponent(token!)}`);
+		expect(resp.status).toBe(200);
+		expect(resp.body.status).toBe(true);
+
+		const me = await agent.get('/api/auth/me');
+		expect(me.status).toBe(200);
+		expect(me.body.emailVerified).toBe(true);
+
+		sendSpy.mockRestore();
 	});
 });

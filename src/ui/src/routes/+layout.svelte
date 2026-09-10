@@ -5,8 +5,8 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
-	import ToastRegion from '$lib/components/ToastRegion.svelte';
-	import { toastStore } from '$lib/toasts.svelte';
+	import ToastRegion from '$lib/toasts/ToastRegion.svelte';
+	import { toastStore } from '$lib/toasts/toasts.svelte';
 	import "$lib/css/fonts.css"
 	
 	let { children } = $props();

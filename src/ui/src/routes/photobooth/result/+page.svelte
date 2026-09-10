@@ -4,7 +4,7 @@
 	import { auth } from '$lib/auth/store.svelte';
 	import { downloadDataUrl, photoFilename } from '$lib/photobooth/download';
 	import { booth } from '$lib/photobooth/store.svelte';
-	import { toastStore } from '$lib/toasts.svelte';
+	import { toastStore } from '$lib/toasts/toasts.svelte';
 
 	const resultUrl = booth.session.resultUrl;
 	const frame = booth.frame;

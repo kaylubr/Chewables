@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 import { registerSchema, loginSchema } from './auth.schema.js';
-import { applyAuthCookies, EmailTakenError, UsernameTakenError, getSessionUser, loginWithUsername, register } from './auth.service.js';
+import { applyAuthCookies, EmailTakenError, UsernameTakenError, getSessionUser, loginWithUsername, register, resendVerificationForSession } from './auth.service.js';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
 
@@ -44,4 +44,19 @@ export const getMe: RequestHandler = async (req, res) => {
 		return res.status(401).json({ detail: 'Not authenticated' });
 	}
 	return res.json(user);
+};
+
+export const resendVerificationEmail: RequestHandler = async (req, res, next) => {
+	try {
+		const sent = await resendVerificationForSession(req.headers);
+		if (!sent) {
+			// No session — fall through to Better Auth's built-in endpoint,
+			// which handles the unauthenticated case (and hides registration /
+			// email enumeration via a timing floor) for a plain email request.
+			return next();
+		}
+		return res.status(200).json({ status: true });
+	} catch (error) {
+		next(error);
+	}
 };

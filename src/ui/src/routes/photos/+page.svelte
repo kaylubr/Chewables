@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
-	import { toastStore } from '$lib/toasts.svelte';
+	import { toastStore } from '$lib/toasts/toasts.svelte';
 	import type { SavedPhoto } from '@chewable/shared';
 
 	type DisplayPhoto = SavedPhoto & { displayUrl?: string };
@@ -11,6 +11,20 @@
 	let loading = $state(true);
 	let loadFailed = $state(false);
 	let deleting = $state<string | null>(null);
+	let resending = $state(false);
+
+	async function resendVerification() {
+		if (resending) return;
+		resending = true;
+		try {
+			await auth.sendVerificationEmail();
+			toastStore.success('Verification email sent. Check your inbox.');
+		} catch (e) {
+			toastStore.error(e instanceof ApiError ? e.message : 'Could not send the email. Please retry.');
+		} finally {
+			resending = false;
+		}
+	}
 
 	async function load() {
 		loadFailed = false;
@@ -61,6 +75,15 @@
 
 <main class="gallery">
 	<h1>My photos</h1>
+
+	{#if auth.verificationPending}
+		<div class="verify" role="status">
+			<span>Verify your email to let Google sign-in link to your account.</span>
+			<button type="button" class="secondary" onclick={resendVerification} disabled={resending}>
+				{resending ? 'Sending…' : 'Resend verification email'}
+			</button>
+		</div>
+	{/if}
 
 	{#if !auth.isAuthenticated}
 		<p class="empty">
@@ -174,6 +197,24 @@
 	.empty {
 		color: var(--ink-soft);
 		margin-top: 2rem;
+	}
+	.verify {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 1rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--warn-line);
+		border-radius: 0.5rem;
+		background: var(--warn-bg);
+		color: var(--warn-ink);
+		font-size: var(--text-sm);
+	}
+	.verify .secondary {
+		margin-top: 0;
+		padding: 0.4rem 0.8rem;
+		font-size: var(--text-sm);
 	}
 	.secondary {
 		background: var(--dev-bg);

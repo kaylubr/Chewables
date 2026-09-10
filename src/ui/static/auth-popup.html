@@ -32,17 +32,17 @@
 			<a id="back" href="/login" hidden>Back to sign in</a>
 		</main>
 		<script>
-			// Lightweight landing page for the Google sign-in popup (and the
-			// full-page fallback). Must stay dependency-free: it reads the
-			// session via the API and tells the opener to continue, without
-			// booting the SvelteKit app.
 			(function () {
 				const SOURCE = 'chewable-google-auth';
 				const FAILED = 'Sign-in did not complete. Please try again.';
+				const VERIFIED = 'Your email is verified.';
 				const params = new URLSearchParams(location.search);
 				const api = params.get('api') || location.origin;
 				const next = params.get('next');
 				const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/photos';
+				const isVerify = params.get('verify') === '1';
+				const statusEl = document.getElementById('status');
+				const backEl = document.getElementById('back');
 
 				async function finish() {
 					let user = null;
@@ -56,6 +56,17 @@
 						}
 					} catch {
 						problem = FAILED;
+					}
+					if (isVerify) {
+						statusEl.textContent = user
+							? user.emailVerified
+								? VERIFIED
+								: 'Could not confirm your email. Please try again.'
+							: (problem ?? FAILED);
+						backEl.hidden = false;
+						backEl.href = target;
+						backEl.textContent = user ? 'Continue' : 'Back to sign in';
+						return;
 					}
 					if (window.opener) {
 						window.opener.postMessage(
@@ -71,8 +82,8 @@
 						location.replace(target);
 						return;
 					}
-					document.getElementById('status').textContent = problem || FAILED;
-					document.getElementById('back').hidden = false;
+					statusEl.textContent = problem || FAILED;
+					backEl.hidden = false;
 				}
 				finish();
 			})();
