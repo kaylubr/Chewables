@@ -292,9 +292,9 @@
 				This permanently deletes your account and every photo saved to it. It cannot be
 				undone.
 			</p>
-			<form class="stack" onsubmit={(e) => { e.preventDefault(); void submitDelete(); }}>
+			<form class="stack" onsubmit={(e) => { e.preventDefault(); submitDelete(); }}>
 				<label>
-					Type <strong>{user.username}</strong> to confirm
+					TYPE <span class="confirm-token">{user.username}</span> TO CONFIRM
 					<input type="text" bind:value={confirmUsername} autocomplete="off" />
 				</label>
 				{#if user.hasPassword}
@@ -425,6 +425,24 @@
 		font-weight: 600;
 	}
 
+	/* The exact string the user has to type, set apart from the sentence as a
+	   literal token. box-decoration-break keeps the chip intact if a long
+	   username wraps. */
+	.confirm-token {
+		padding: 0.1rem 0.4rem;
+		border: 1px solid var(--danger-line);
+		border-radius: 0.3rem;
+		background: var(--surface);
+		color: var(--charcoal);
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		overflow-wrap: anywhere;
+		box-decoration-break: clone;
+		-webkit-box-decoration-break: clone;
+	}
+
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
@@ -464,7 +482,7 @@
 		border-radius: 0.5rem;
 		font-family: var(--font-mono);
 		font-size: var(--text-sm);
-		font-weight: 650;
+		font-weight: 600;
 		cursor: pointer;
 		justify-self: start;
 	}

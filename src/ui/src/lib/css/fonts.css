@@ -1,5 +1,11 @@
+/* One static cut per family. Fraunces ships as the SemiBold (OS/2 600) cut, so
+   it is declared at 600: the browser then reaches it for the display weights
+   instead of synthesizing bold from a face it thinks is 400. */
 @font-face {
+  font-display: swap;
   font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600;
   src: url("/fonts/fraunces.woff2") format("woff2");
 }
 

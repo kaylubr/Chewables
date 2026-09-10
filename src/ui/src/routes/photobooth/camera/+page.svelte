@@ -213,7 +213,7 @@
 	}
 	h1 {
 		margin-bottom: 0.25rem;
-		font-weight: 620;
+		font-weight: 600;
 	}
 	.sub {
 		color: var(--ink-soft);
@@ -259,8 +259,8 @@
 		background: var(--ember);
 		color: #fff;
 		border: none;
-		font-size: 1.1rem;
-		font-weight: 650;
+		font-size: var(--text-base);
+		font-weight: 600;
 		padding: 0.9rem 1.8rem;
 		border-radius: 999px;
 		cursor: pointer;
@@ -387,7 +387,7 @@
 			font-size: clamp(4rem, 24vw, 6rem);
 		}
 		.big-start {
-			font-size: 1.2rem;
+			font-size: var(--text-lg);
 			padding: 1rem 2.4rem;
 		}
 	}

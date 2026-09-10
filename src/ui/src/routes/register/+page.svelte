@@ -149,7 +149,7 @@
 		color: var(--ink);
 	}
 	.auth-page h1 {
-		font-weight: 640;
+		font-weight: 600;
 	}
 	.sub {
 		color: var(--ink-soft);
@@ -229,7 +229,7 @@
 		border: none;
 		border-radius: 0.5rem;
 		padding: 0.75rem;
-		font-weight: 650;
+		font-weight: 600;
 		font-size: var(--text-base);
 		cursor: pointer;
 	}
@@ -241,7 +241,7 @@
 	}
 	.alt {
 		margin-top: 1.25rem;
-		font-size: 0.95rem;
+		font-size: var(--text-base);
 		color: var(--ink-soft);
 	}
 	.modal-backdrop {

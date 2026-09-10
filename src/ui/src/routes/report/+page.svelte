@@ -20,7 +20,7 @@
 		color: var(--ink);
 	}
 	.report-page h1 {
-		font-weight: 640;
+		font-weight: 600;
 	}
 	.sub {
 		color: var(--ink-soft);

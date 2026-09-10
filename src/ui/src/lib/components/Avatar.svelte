@@ -36,7 +36,7 @@
 		place-items: center;
 		font-family: var(--font-display);
 		font-weight: 700;
-		font-size: 0.9rem;
+		font-size: var(--text-sm);
 		line-height: 1;
 		color: var(--ember);
 		background: var(--mustard);

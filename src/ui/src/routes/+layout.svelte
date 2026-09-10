@@ -182,6 +182,13 @@
 		--text-2xl: 2.25rem;
 		--text-3xl: 3rem;
 
+		/* Leading by role and the readable measure for prose. */
+		--leading-tight: 1.1;
+		--leading-snug: 1.3;
+		--leading-normal: 1.55;
+		--leading-relaxed: 1.7;
+		--measure: 65ch;
+
 		--ink: var(--charcoal);
 		--ember: var(--crimson);
 		--ember-deep: var(--crimson-deep);
@@ -199,7 +206,7 @@
 	}
 	:global(body) {
 		font-size: var(--text-base);
-		line-height: 1.6;
+		line-height: var(--leading-normal);
 		color: var(--charcoal);
 		background: var(--paper);
 		margin: 0;
@@ -207,11 +214,14 @@
 	:global(h1, h2, h3) {
 		font-family: var(--font-display);
 		font-optical-sizing: auto;
+		line-height: var(--leading-tight);
 		text-wrap: balance;
+		overflow-wrap: break-word;
 		color: var(--charcoal);
 	}
 	:global(p) {
 		text-wrap: pretty;
+		overflow-wrap: break-word;
 	}
 	:global(input, textarea) {
 		font: inherit;
@@ -284,12 +294,12 @@
 	nav a,
 	.link {
 		font-family: var(--font-mono);
-		font-size: clamp(0.68rem, 0.4rem + 0.55vw, 0.95rem);
+		font-size: clamp(var(--text-xs), 0.4rem + 0.55vw, var(--text-sm));
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--mustard);
 		text-decoration: none;
-		font-weight: bolder;
+		font-weight: 700;
 		background: none;
 		border: none;
 		padding: 0.5rem 0.2rem;
@@ -423,7 +433,7 @@
 	.drawer-nav a,
 	.drawer-nav .link {
 		font-family: var(--font-mono);
-		font-size: 0.95rem;
+		font-size: var(--text-base);
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--charcoal);

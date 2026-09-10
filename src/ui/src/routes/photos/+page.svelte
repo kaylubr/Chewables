@@ -242,7 +242,7 @@ onMount(() => {
 		border: none;
 		border-radius: 50%;
 		font-family: var(--font-ui);
-		font-size: 1.15rem;
+		font-size: var(--text-lg);
 		line-height: 1;
 		cursor: pointer;
 		opacity: 0;

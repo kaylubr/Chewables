@@ -183,7 +183,7 @@
 	}
 	.marquee {
 		font-family: var(--font-display);
-		font-weight: 800;
+		font-weight: 700;
 		font-size: clamp(3.6rem, 12vw, 8rem);
 		line-height: 0.95;
 		letter-spacing: -0.03em;
@@ -194,10 +194,10 @@
 		margin: 0;
 	}
 	.lede {
-		font-size: clamp(0.9rem, 2.4vw, 1.4rem);
+		font-size: clamp(var(--text-base), 2.4vw, var(--text-lg));
 		text-align: center;
-		line-height: 1.6;
-		font-weight: bolder;
+		line-height: var(--leading-normal);
+		font-weight: 700;
 		color: #fff;
 		max-width: 38rem;
 		margin: 0;
@@ -221,7 +221,7 @@
 		color: var(--mustard);
 		font-family: var(--font-ui);
 		font-weight: 700;
-		font-size: clamp(0.72rem, 0.5vw + 0.65rem, 0.85rem);
+		font-size: clamp(var(--text-xs), 0.5vw + 0.65rem, var(--text-sm));
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		white-space: nowrap;
@@ -269,8 +269,8 @@
 	.about-description p {
 		margin: 0;
 		color: var(--mustard);
-		font-size: clamp(0.9rem, 0.5rem + 0.6vw, 1.15rem);
-		line-height: 1.6;
+		font-size: clamp(var(--text-base), 0.5rem + 0.6vw, var(--text-lg));
+		line-height: var(--leading-relaxed);
 	}
 	.faq {
 		border-top: 1px solid var(--line);
@@ -285,7 +285,7 @@
 	}
 	.section-title {
 		font-weight: 700;
-		font-size: clamp(1.9rem, 3.5vw, 2.6rem);
+		font-size: clamp(var(--text-xl), 3.5vw, var(--text-3xl));
 		letter-spacing: -0.01em;
 		margin: 0 0 1.25rem;
 		color: var(--charcoal);
@@ -305,8 +305,8 @@
 		margin: 0;
 		max-width: 32ch;
 		color: var(--ink-soft);
-		font-size: clamp(0.95rem, 1.2vw, 1.1rem);
-		line-height: 1.6;
+		font-size: clamp(var(--text-base), 1.2vw, var(--text-lg));
+		line-height: var(--leading-normal);
 	}
 	.steps {
 		list-style: none;
@@ -320,16 +320,16 @@
 	}
 	.steps h3 {
 		font-weight: 700;
-		font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+		font-size: clamp(var(--text-base), 1.8vw, var(--text-lg));
 		margin: 0 0 0.35rem;
 		color: var(--charcoal);
 	}
 	.steps p {
 		margin: 0;
 		color: var(--ink-soft);
-		font-size: clamp(0.85rem, 1.1vw, 1.05rem);
-		line-height: 1.55;
-		max-width: 54ch;
+		font-size: clamp(var(--text-sm), 1.1vw, var(--text-base));
+		line-height: var(--leading-normal);
+		max-width: var(--measure);
 	}
 	@media (min-width: 900px) {
 		.process-inner {
@@ -361,7 +361,7 @@
 		background: none;
 		border: none;
 		font-family: var(--font-ui);
-		font-size: 1.05rem;
+		font-size: var(--text-lg);
 		font-weight: 700;
 		text-align: left;
 		color: var(--charcoal);
@@ -418,9 +418,9 @@
 		margin: 0;
 		padding: 0 1.3rem 1.2rem;
 		color: var(--ink-soft);
-		font-size: 0.98rem;
-		line-height: 1.6;
-		max-width: 60ch;
+		font-size: var(--text-base);
+		line-height: var(--leading-normal);
+		max-width: var(--measure);
 	}
 	.about-links {
 		list-style: none;
@@ -433,7 +433,7 @@
 	}
 	.about-links a {
 		font-family: var(--font-ui);
-		font-size: clamp(0.8rem, 0.45rem + 0.5vw, 1rem);
+		font-size: clamp(var(--text-xs), 0.45rem + 0.5vw, var(--text-base));
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		font-weight: 600;

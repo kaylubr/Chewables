@@ -119,7 +119,7 @@ function startOver() {
 		text-align: center;
 	}
 	.result-page h1 {
-		font-weight: 620;
+		font-weight: 600;
 	}
 	.result {
 		max-width: min(360px, 100%);
