@@ -18,6 +18,11 @@
 	}
 
 	onMount(() => {
+		// Hydrate the auth store from the session cookie so the nav (and the
+		// authenticated Photos link) reflect the signed-in state on any page,
+		// including a hard reload.
+		void auth.ensureSession();
+
 		const wide = window.matchMedia('(min-width: 761px)');
 		const onWide = (event: MediaQueryListEvent) => {
 			if (event.matches) closeDrawer();
@@ -55,7 +60,9 @@
 		<div class="bar-right">
 			<nav>
 				<a href="/photobooth/frame">Photobooth</a>
-				{#if !auth.isAuthenticated}
+				{#if auth.isAuthenticated}
+					<a href="/photos">Photos</a>
+				{:else}
 					<a href="/#faq">FAQ</a>
 					<a href="/#about">About</a>
 					<a href="/login">Sign in</a>
@@ -104,6 +111,7 @@
 		<a href="/" onclick={closeDrawer}>Home</a>
 		<a href="/photobooth/frame" onclick={closeDrawer}>Photobooth</a>
 		{#if auth.isAuthenticated}
+			<a href="/photos" onclick={closeDrawer}>Photos</a>
 			<a href="/profile" onclick={closeDrawer}>My profile</a>
 			<button type="button" class="link" onclick={signOut}>Sign out</button>
 		{:else}

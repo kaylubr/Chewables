@@ -29,3 +29,9 @@ Shared vocabulary for the Chewables photobooth. Terms here mean exactly what thi
 - **Photo** — A saved-photo metadata row: id, user_id (FK), frame id string, storage_key, created_at. One-to-many User → Photo.
 - **Storage key** — The backend-generated object-store path, e.g. `users/{user_id}/photos/{photo_id}.webp`. The client never chooses it.
 - **Object storage** — S3-compatible storage holding the image bytes (ADR 0002); MinIO in dev, a real S3-compatible provider in prod.
+
+## Surfaces
+
+- **Profile** — The identity page (`/profile`): avatar, username, email reveal. Does not show photos (ADR 0011).
+- **Gallery** — The saved-photo page (`/photos`): the user's own saved compositions with delete. The canonical photo surface; reached from the authenticated nav (ADR 0011).
+- **Settings** — The account page (`/settings`): currently the email-verification card. A thin account surface, not a photo surface (ADR 0011).

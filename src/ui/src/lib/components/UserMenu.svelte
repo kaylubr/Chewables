@@ -65,7 +65,7 @@
 		aria-label="Account menu"
 		onclick={toggle}
 	>
-		<Avatar image={user.image} username={user.username} />
+		<Avatar image={user.image} username={user.username} size="3rem" />
 	</button>
 
 	{#if open}
