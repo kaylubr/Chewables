@@ -20,16 +20,12 @@
 		drawerOpen = false;
 	}
 
-	/** Signing out is confirmed first; the dialog asks before the session ends. */
 	function requestSignOut() {
 		closeDrawer();
 		signOutPending = true;
 	}
 
 	onMount(() => {
-		// Hydrate the auth store from the session cookie so the nav (and the
-		// authenticated Photos link) reflect the signed-in state on any page,
-		// including a hard reload.
 		void auth.ensureSession();
 
 		const wide = window.matchMedia('(min-width: 761px)');
@@ -269,17 +265,10 @@
 	:global(::selection) {
 		background: color-mix(in srgb, var(--mustard) 40%, transparent);
 	}
-	/* Themed scrollbars. `scrollbar-color` and `scrollbar-width` are inherited,
-	   so the root declaration covers the document and the drawer alike. Current
-	   Chromium and Safari honour these; the -webkit- rules below are for older
-	   WebKit, which ignores the standard properties and needs its own styling. */
-	:global(html) {
-		scrollbar-color: var(--ink-faint) transparent;
-		scrollbar-width: thin;
-	}
 	:global(::-webkit-scrollbar) {
 		width: 10px;
 		height: 10px;
+		background: transparent;
 	}
 	:global(::-webkit-scrollbar-track) {
 		background: transparent;
@@ -290,6 +279,12 @@
 	}
 	:global(::-webkit-scrollbar-thumb:hover) {
 		background: var(--mustard);
+	}
+	@supports not selector(::-webkit-scrollbar) {
+		:global(html) {
+			scrollbar-color: var(--ink-faint) transparent;
+			scrollbar-width: thin;
+		}
 	}
 	:global(a) {
 		color: var(--crimson);
