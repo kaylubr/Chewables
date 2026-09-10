@@ -269,6 +269,28 @@
 	:global(::selection) {
 		background: color-mix(in srgb, var(--mustard) 40%, transparent);
 	}
+	/* Themed scrollbars. `scrollbar-color` and `scrollbar-width` are inherited,
+	   so the root declaration covers the document and the drawer alike. Current
+	   Chromium and Safari honour these; the -webkit- rules below are for older
+	   WebKit, which ignores the standard properties and needs its own styling. */
+	:global(html) {
+		scrollbar-color: var(--ink-faint) transparent;
+		scrollbar-width: thin;
+	}
+	:global(::-webkit-scrollbar) {
+		width: 10px;
+		height: 10px;
+	}
+	:global(::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+	:global(::-webkit-scrollbar-thumb) {
+		background: var(--ink-faint);
+		border-radius: 999px;
+	}
+	:global(::-webkit-scrollbar-thumb:hover) {
+		background: var(--mustard);
+	}
 	:global(a) {
 		color: var(--crimson);
 		text-decoration-thickness: 1px;
