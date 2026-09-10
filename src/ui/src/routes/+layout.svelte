@@ -55,9 +55,9 @@
 		<div class="bar-right">
 			<nav>
 				<a href="/photobooth/frame">Photobooth</a>
-				<a href="/#faq">FAQ</a>
-				<a href="/#about">About</a>
 				{#if !auth.isAuthenticated}
+					<a href="/#faq">FAQ</a>
+					<a href="/#about">About</a>
 					<a href="/login">Sign in</a>
 				{/if}
 			</nav>
@@ -103,12 +103,12 @@
 	<nav class="drawer-nav">
 		<a href="/" onclick={closeDrawer}>Home</a>
 		<a href="/photobooth/frame" onclick={closeDrawer}>Photobooth</a>
-		<a href="/#faq" onclick={closeDrawer}>FAQ</a>
-		<a href="/#about" onclick={closeDrawer}>About</a>
 		{#if auth.isAuthenticated}
 			<a href="/profile" onclick={closeDrawer}>My profile</a>
 			<button type="button" class="link" onclick={signOut}>Sign out</button>
 		{:else}
+			<a href="/#faq" onclick={closeDrawer}>FAQ</a>
+			<a href="/#about" onclick={closeDrawer}>About</a>
 			<a href="/login" onclick={closeDrawer}>Sign in</a>
 		{/if}
 	</nav>
