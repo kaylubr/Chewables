@@ -136,6 +136,7 @@
 		color: var(--charcoal);
 		font-family: var(--font-mono);
 		font-size: 0.8rem;
+		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		text-align: left;
