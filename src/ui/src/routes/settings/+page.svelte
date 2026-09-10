@@ -341,9 +341,9 @@
 
 	.card {
 		padding: 1.5rem;
-		border: 1px solid var(--line-strong);
 		border-radius: 0.75rem;
 		background: var(--surface);
+		box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 	}
 
 	.card.danger {
