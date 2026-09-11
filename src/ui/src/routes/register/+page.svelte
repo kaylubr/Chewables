@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
+	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
@@ -113,11 +114,11 @@
 		</label>
 		<label>
 			Password
-			<input type="password" bind:value={password} required autocomplete="new-password" minlength="8" />
+			<PasswordInput bind:value={password} required autocomplete="new-password" minlength={8} />
 		</label>
 		<label>
 			Confirm password
-			<input type="password" bind:value={confirm} required autocomplete="new-password" />
+			<PasswordInput bind:value={confirm} required autocomplete="new-password" />
 		</label>
 
 		<button type="submit" class="primary" disabled={submitting}>

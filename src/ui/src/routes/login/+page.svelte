@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
+	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
@@ -108,7 +109,7 @@
 		</label>
 		<label>
 			Password
-			<input type="password" bind:value={password} required autocomplete="current-password" />
+			<PasswordInput bind:value={password} required autocomplete="current-password" />
 		</label>
 
 		<button type="submit" class="primary" disabled={submitting}>

@@ -5,6 +5,7 @@
 	import type { AuthUser } from '@chewable/shared';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth/store.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
@@ -338,8 +339,7 @@
 				{#if user.hasPassword}
 					<label>
 						Current password
-						<input
-							type="password"
+						<PasswordInput
 							bind:value={currentPassword}
 							required
 							autocomplete="current-password"
@@ -348,21 +348,19 @@
 				{/if}
 				<label>
 					New password
-					<input
-						type="password"
+					<PasswordInput
 						bind:value={newPassword}
 						required
-						minlength="8"
+						minlength={8}
 						autocomplete="new-password"
 					/>
 				</label>
 				<label>
 					Confirm new password
-					<input
-						type="password"
+					<PasswordInput
 						bind:value={confirmPassword}
 						required
-						minlength="8"
+						minlength={8}
 						autocomplete="new-password"
 					/>
 				</label>
@@ -386,8 +384,7 @@
 				{#if user.hasPassword}
 					<label>
 						Password
-						<input
-							type="password"
+						<PasswordInput
 							bind:value={deletePassword}
 							autocomplete="current-password"
 						/>
