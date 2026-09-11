@@ -1,10 +1,11 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import { onMount, tick } from "svelte";
 import { goto } from "$app/navigation";
 import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import Lightbox from "$lib/components/Lightbox.svelte";
+import NoPhotosIcon from "$lib/components/NoPhotosIcon.svelte";
 import { frameAspectRatio } from "$lib/frames/frames";
 import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { SavedPhoto } from "@chewable/shared";
@@ -15,15 +16,13 @@ let photos = $state<DisplayPhoto[]>([]);
 let loading = $state(true);
 let loadFailed = $state(false);
 let deleting = $state<string | null>(null);
-// Deletion is permanent (row + stored object both go), so it goes through a
-// confirm step instead of firing on the first click.
 let pendingDelete = $state<DisplayPhoto | null>(null);
-// Index into `viewable`, or null while the viewer is closed.
 let lightboxIndex = $state<number | null>(null);
 let heading = $state<HTMLHeadingElement | undefined>();
+let emptyHeading = $state<HTMLHeadingElement | undefined>();
 
-// Only photos with a resolved URL can be enlarged, and the viewer navigates
-// this list, so it is the list the arrows walk.
+const isEmpty = $derived(!loading && !loadFailed && photos.length === 0);
+
 const viewable = $derived(
 	photos
 		.filter((p): p is DisplayPhoto & { displayUrl: string } =>
@@ -84,8 +83,8 @@ async function confirmRemove() {
 		await api.deletePhoto(photo.id);
 		photos = photos.filter((p) => p.id !== photo.id);
 		toastStore.success("Photo deleted.");
-		// The trigger tile is gone, so hand focus to the section heading.
-		heading?.focus();
+		await tick();
+		(heading ?? emptyHeading)?.focus();
 	} catch (e) {
 		toastStore.error(
 			e instanceof ApiError ? e.message : "Could not delete the photo.",
@@ -105,7 +104,9 @@ onMount(() => {
 </svelte:head>
 
 <main class="gallery" inert={pendingDelete !== null || lightboxIndex !== null}>
-	<h1 bind:this={heading} tabindex="-1">Photos</h1>
+	{#if !isEmpty}
+		<h1 bind:this={heading} tabindex="-1">Photos</h1>
+	{/if}
 
 	{#if loading}
 		<p class="empty">Loading…</p>
@@ -113,16 +114,16 @@ onMount(() => {
 		<p class="empty">Couldn't load your photos.</p>
 		<button type="button" class="secondary" onclick={load}>Retry</button>
 	{:else if photos.length === 0}
-		<p class="empty">
-			No saved photos yet. Take one in the <a href="/photobooth/frame">photobooth</a>.
-		</p>
+		<div class="empty-state">
+			<NoPhotosIcon />
+			<h2 bind:this={emptyHeading} tabindex="-1">No photos yet</h2>
+			<p>Anything you save from the photobooth shows up here.</p>
+			<a class="cta" href="/photobooth/frame">Take a photo</a>
+		</div>
 	{:else}
 		<div class="grid">
 			{#each photos as photo (photo.id)}
 				<figure class="tile" style:aspect-ratio={frameAspectRatio(photo.frame)}>
-					<!-- Wrapping the image in its own button keeps the delete
-					     control a sibling: nested buttons are invalid, and this
-					     way clicking delete never opens the viewer. -->
 					<button
 						type="button"
 						class="open"
@@ -203,7 +204,6 @@ onMount(() => {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.35rem;
-		/* Keeps each tile at its own ratio instead of stretching it to the row. */
 		align-items: start;
 	}
 
@@ -292,6 +292,49 @@ onMount(() => {
 		color: var(--ink-soft);
 	}
 
+	.empty-state {
+		position: fixed;
+		inset: 0;
+		overflow: auto;
+		display: grid;
+		place-content: center;
+		place-content: safe center;
+		justify-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem;
+		text-align: center;
+		color: var(--ink-faint);
+	}
+
+	.empty-state h2 {
+		margin: 0;
+		font-size: var(--text-xl);
+		color: var(--ink);
+	}
+
+	.empty-state p {
+		margin: 0;
+		max-width: var(--measure);
+		color: var(--ink-soft);
+		font-size: var(--text-sm);
+	}
+
+	.cta {
+		margin-top: 0.75rem;
+		padding: 0.7rem 1.3rem;
+		border-radius: 0.5rem;
+		background: var(--ember);
+		color: #fff;
+		font-family: var(--font-ui);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.cta:hover {
+		background: var(--ember-deep);
+	}
+
 	.secondary {
 		background: var(--dev-bg);
 		color: var(--dev-ink);
@@ -320,6 +363,12 @@ onMount(() => {
 			width: 2.75rem;
 			height: 2.75rem;
 			font-size: 1.5rem;
+		}
+
+		.cta {
+			display: inline-flex;
+			align-items: center;
+			min-height: 44px;
 		}
 	}
 </style>
