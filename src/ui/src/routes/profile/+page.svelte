@@ -2,6 +2,7 @@
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
+import Lightbox from "$lib/components/Lightbox.svelte";
 import type { AuthUser, SavedPhoto } from "@chewable/shared";
 import { onMount } from "svelte";
 
@@ -19,6 +20,23 @@ let photos = $state<DisplayPhoto[]>([]);
 let recent = $state<DisplayPhoto[]>([]);
 let photosLoading = $state(true);
 let photosFailed = $state(false);
+// Index into `viewable`, or null while the viewer is closed.
+let lightboxIndex = $state<number | null>(null);
+
+// The viewer walks only the signed photos, which on this page is the recent
+// strip: the full set stays a click away in the gallery.
+const viewable = $derived(
+	recent
+		.filter((p): p is DisplayPhoto & { displayUrl: string } =>
+			Boolean(p.displayUrl),
+		)
+		.map((p) => ({ id: p.id, url: p.displayUrl })),
+);
+
+function openViewer(photo: DisplayPhoto) {
+	const at = viewable.findIndex((p) => p.id === photo.id);
+	if (at !== -1) lightboxIndex = at;
+}
 
 function initials(username: string): string {
 	return username.trim().slice(0, 2).toUpperCase() || "?";
@@ -74,7 +92,7 @@ onMount(async () => {
 	<title>My profile</title>
 </svelte:head>
 
-<main class="profile">
+<main class="profile" inert={lightboxIndex !== null}>
 	{#if !user}
 		<p class="empty">Loading…</p>
 	{:else}
@@ -140,11 +158,19 @@ onMount(async () => {
 				<div class="grid">
 					{#each recent as photo (photo.id)}
 						<figure class="tile">
-							{#if photo.displayUrl}
-								<img src={photo.displayUrl} alt="Saved photobooth result" loading="lazy" />
-							{:else}
-								<div class="placeholder">unavailable</div>
-							{/if}
+							<button
+								type="button"
+								class="open"
+								aria-label={`View the photo from ${photo.createdAt}`}
+								disabled={!photo.displayUrl}
+								onclick={() => openViewer(photo)}
+							>
+								{#if photo.displayUrl}
+									<img src={photo.displayUrl} alt="Saved photobooth result" loading="lazy" />
+								{:else}
+									<div class="placeholder">unavailable</div>
+								{/if}
+							</button>
 						</figure>
 					{/each}
 				</div>
@@ -152,6 +178,14 @@ onMount(async () => {
 		</section>
 	{/if}
 </main>
+
+{#if lightboxIndex !== null}
+	<Lightbox
+		photos={viewable}
+		index={lightboxIndex}
+		onClose={() => (lightboxIndex = null)}
+	/>
+{/if}
 
 <style>
 	.profile {
@@ -301,6 +335,20 @@ onMount(async () => {
 		background: var(--surface-2);
 		border-radius: 0.5rem;
 		overflow: hidden;
+	}
+
+	.open {
+		display: block;
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		border: none;
+		background: none;
+		cursor: zoom-in;
+	}
+
+	.open:disabled {
+		cursor: default;
 	}
 
 	.tile img,

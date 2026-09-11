@@ -4,6 +4,7 @@ import { goto } from "$app/navigation";
 import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+import Lightbox from "$lib/components/Lightbox.svelte";
 import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { SavedPhoto } from "@chewable/shared";
 
@@ -16,7 +17,24 @@ let deleting = $state<string | null>(null);
 // Deletion is permanent (row + stored object both go), so it goes through a
 // confirm step instead of firing on the first click.
 let pendingDelete = $state<DisplayPhoto | null>(null);
+// Index into `viewable`, or null while the viewer is closed.
+let lightboxIndex = $state<number | null>(null);
 let heading = $state<HTMLHeadingElement | undefined>();
+
+// Only photos with a resolved URL can be enlarged, and the viewer navigates
+// this list, so it is the list the arrows walk.
+const viewable = $derived(
+	photos
+		.filter((p): p is DisplayPhoto & { displayUrl: string } =>
+			Boolean(p.displayUrl),
+		)
+		.map((p) => ({ id: p.id, url: p.displayUrl })),
+);
+
+function openViewer(photo: DisplayPhoto) {
+	const at = viewable.findIndex((p) => p.id === photo.id);
+	if (at !== -1) lightboxIndex = at;
+}
 
 function requestRemove(photo: DisplayPhoto) {
 	pendingDelete = photo;
@@ -85,7 +103,7 @@ onMount(() => {
 	<title>Photos</title>
 </svelte:head>
 
-<main class="gallery" inert={pendingDelete !== null}>
+<main class="gallery" inert={pendingDelete !== null || lightboxIndex !== null}>
 	<h1 bind:this={heading} tabindex="-1">Photos</h1>
 
 	{#if loading}
@@ -101,11 +119,22 @@ onMount(() => {
 		<div class="grid">
 			{#each photos as photo (photo.id)}
 				<figure class="tile">
-					{#if photo.displayUrl}
-						<img src={photo.displayUrl} alt="Saved photobooth result" loading="lazy" />
-					{:else}
-						<div class="placeholder">unavailable</div>
-					{/if}
+					<!-- Wrapping the image in its own button keeps the delete
+					     control a sibling: nested buttons are invalid, and this
+					     way clicking delete never opens the viewer. -->
+					<button
+						type="button"
+						class="open"
+						aria-label={`View the photo from ${photo.createdAt}`}
+						disabled={!photo.displayUrl}
+						onclick={() => openViewer(photo)}
+					>
+						{#if photo.displayUrl}
+							<img src={photo.displayUrl} alt="Saved photobooth result" loading="lazy" />
+						{:else}
+							<div class="placeholder">unavailable</div>
+						{/if}
+					</button>
 					<span class="frame-label">{photo.frame}</span>
 					<button
 						type="button"
@@ -146,6 +175,14 @@ onMount(() => {
 	</ConfirmDialog>
 {/if}
 
+{#if lightboxIndex !== null}
+	<Lightbox
+		photos={viewable}
+		index={lightboxIndex}
+		onClose={() => (lightboxIndex = null)}
+	/>
+{/if}
+
 <style>
 	.gallery {
 		max-width: 40rem;
@@ -174,6 +211,20 @@ onMount(() => {
 		background: var(--surface-2);
 		border-radius: 0.5rem;
 		overflow: hidden;
+	}
+
+	.open {
+		display: block;
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		border: none;
+		background: none;
+		cursor: zoom-in;
+	}
+
+	.open:disabled {
+		cursor: default;
 	}
 
 	.tile img,
