@@ -287,7 +287,9 @@ $effect(() => {
 		inset: 0;
 		display: grid;
 		place-items: center;
-		background: rgb(0 0 0 / 0.45);
+		/* Near-black, like a social photo viewer: the page behind should all but
+		   disappear rather than tint the image. */
+		background: rgb(0 0 0 / 0.92);
 		z-index: 70;
 		animation: fade 150ms ease;
 		/* Owns the horizontal gesture; vertical stays with the browser. */
