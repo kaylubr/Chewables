@@ -541,10 +541,6 @@
 		font-size: var(--text-sm);
 		font-weight: 600;
 	}
-
-	/* The exact string the user has to type, set apart from the sentence as a
-	   literal token. box-decoration-break keeps the chip intact if a long
-	   username wraps. */
 	.confirm-token {
 		padding: 0.1rem 0.4rem;
 		border: 1px solid var(--danger-line);
@@ -564,6 +560,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.6rem;
+		margin-top: 1rem;
 	}
 
 	.stack {
