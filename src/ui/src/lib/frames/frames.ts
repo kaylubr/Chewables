@@ -35,3 +35,13 @@ export const FRAME_BY_ID: ReadonlyMap<FrameId, FrameDefinition> = new Map(
 export function getFrame(id: FrameId): FrameDefinition | undefined {
   return FRAME_BY_ID.get(id);
 }
+
+/**
+ * CSS `aspect-ratio` for a frame's canvas, so a saved photo is shown at the
+ * shape it was saved in rather than cover-cropped. Undefined without a
+ * registered definition.
+ */
+export function frameAspectRatio(id: string): string | undefined {
+  const frame = FRAME_BY_ID.get(id as FrameId);
+  return frame ? `${frame.width} / ${frame.height}` : undefined;
+}

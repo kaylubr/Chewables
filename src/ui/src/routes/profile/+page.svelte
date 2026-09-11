@@ -5,6 +5,7 @@ import { auth } from "$lib/auth/store.svelte";
 import Avatar from "$lib/components/Avatar.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import Lightbox from "$lib/components/Lightbox.svelte";
+import { frameAspectRatio } from "$lib/frames/frames";
 import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { AuthUser, SavedPhoto } from "@chewable/shared";
 import { onMount } from "svelte";
@@ -188,7 +189,7 @@ onMount(async () => {
 			{:else}
 				<div class="grid">
 					{#each recent as photo (photo.id)}
-						<figure class="tile">
+						<figure class="tile" style:aspect-ratio={frameAspectRatio(photo.frame)}>
 							<button
 								type="button"
 								class="open"
@@ -378,14 +379,13 @@ onMount(async () => {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.75rem;
+		/* Keeps each tile at its own ratio instead of stretching it to the row. */
+		align-items: start;
 	}
 
 	.tile {
 		position: relative;
 		margin: 0;
-		/* The composed frame canvas (564x1365), so the whole film strip shows
-		   instead of being cover-cropped to a square. */
-		aspect-ratio: 564 / 1365;
 		background: var(--surface-2);
 		border-radius: 0.75rem;
 		overflow: hidden;

@@ -205,8 +205,6 @@
 		--font-ui: 'Philosopher', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 		--font-mono: 'Lustria', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-		/* Ramp rebuilt on a 1.3+ step so adjacent levels read apart; the old
-		   lg/xl/2xl (1.125 / 1.22 / 1.27) all fell below the minimum. */
 		--text-xs: 0.75rem;
 		--text-sm: 0.875rem;
 		--text-base: 1rem;
@@ -215,7 +213,6 @@
 		--text-2xl: 2.25rem;
 		--text-3xl: 3rem;
 
-		/* Leading by role and the readable measure for prose. */
 		--leading-tight: 1.1;
 		--leading-snug: 1.3;
 		--leading-normal: 1.55;

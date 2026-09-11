@@ -5,6 +5,7 @@ import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import Lightbox from "$lib/components/Lightbox.svelte";
+import { frameAspectRatio } from "$lib/frames/frames";
 import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { SavedPhoto } from "@chewable/shared";
 
@@ -118,7 +119,7 @@ onMount(() => {
 	{:else}
 		<div class="grid">
 			{#each photos as photo (photo.id)}
-				<figure class="tile">
+				<figure class="tile" style:aspect-ratio={frameAspectRatio(photo.frame)}>
 					<!-- Wrapping the image in its own button keeps the delete
 					     control a sibling: nested buttons are invalid, and this
 					     way clicking delete never opens the viewer. -->
@@ -202,12 +203,13 @@ onMount(() => {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.35rem;
+		/* Keeps each tile at its own ratio instead of stretching it to the row. */
+		align-items: start;
 	}
 
 	.tile {
 		position: relative;
 		margin: 0;
-		aspect-ratio: 1 / 1;
 		background: var(--surface-2);
 		border-radius: 0.5rem;
 		overflow: hidden;
