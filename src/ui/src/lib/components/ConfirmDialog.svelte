@@ -145,7 +145,7 @@
 		border-radius: 0.5rem;
 		padding: 0.6rem 1.2rem;
 		color: var(--ink);
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		cursor: pointer;
@@ -162,7 +162,7 @@
 		border-radius: 0.5rem;
 		padding: 0.6rem 1.2rem;
 		color: #fff;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		cursor: pointer;

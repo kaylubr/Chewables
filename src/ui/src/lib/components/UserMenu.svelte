@@ -134,7 +134,7 @@
 		border-radius: 0.4rem;
 		background: none;
 		color: var(--charcoal);
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 700;
 		letter-spacing: 0.08em;

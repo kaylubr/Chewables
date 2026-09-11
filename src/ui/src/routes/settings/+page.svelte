@@ -513,7 +513,7 @@
 	.badge {
 		padding: 0.15rem 0.5rem;
 		border-radius: 999px;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-xs);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -547,7 +547,7 @@
 		border-radius: 0.3rem;
 		background: var(--surface);
 		color: var(--charcoal);
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		letter-spacing: 0.02em;
@@ -594,7 +594,7 @@
 	.destructive {
 		padding: 0.7rem 1.3rem;
 		border-radius: 0.5rem;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		cursor: pointer;

@@ -271,7 +271,7 @@
 		inset: 0;
 		display: grid;
 		place-items: center;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: 6rem;
 		font-weight: 700;
 		line-height: 1;
@@ -315,7 +315,7 @@
 	.count {
 		margin-left: 0.5rem;
 		color: var(--ink-soft);
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-variant-numeric: tabular-nums;
 	}

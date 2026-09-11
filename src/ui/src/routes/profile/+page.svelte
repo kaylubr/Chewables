@@ -305,7 +305,7 @@ onMount(async () => {
 		border: 1px solid var(--line-strong);
 		border-radius: 0.5rem;
 		color: var(--ink);
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		text-decoration: none;
@@ -335,7 +335,7 @@ onMount(async () => {
 	}
 
 	.stat dt {
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-xs);
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -365,7 +365,7 @@ onMount(async () => {
 	}
 
 	.view-all {
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		text-decoration: none;
 	}
@@ -435,7 +435,7 @@ onMount(async () => {
 		left: 0.5rem;
 		bottom: 0.5rem;
 		padding: 0.15rem 0.4rem;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-xs);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -477,7 +477,7 @@ onMount(async () => {
 		border-radius: 0.5rem;
 		background: var(--ember);
 		color: #fff;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-sm);
 		font-weight: 600;
 		text-decoration: none;

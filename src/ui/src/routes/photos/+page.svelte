@@ -249,7 +249,7 @@ onMount(() => {
 		left: 0.45rem;
 		bottom: 0.45rem;
 		padding: 0.15rem 0.4rem;
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-xs);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;

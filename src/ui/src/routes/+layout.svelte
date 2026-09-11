@@ -201,9 +201,8 @@
 		--stage-ink-soft: #cfc4b8;
 		--stage-line: #3a3028;
 
-		--font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-		--font-ui: 'Philosopher', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-		--font-mono: 'Lustria', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--font-display: 'Merriweather', Georgia, 'Times New Roman', serif;
+		--font-ui: 'Lato', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
 		--text-xs: 0.75rem;
 		--text-sm: 0.875rem;
@@ -244,6 +243,7 @@
 	:global(h1, h2, h3) {
 		font-family: var(--font-display);
 		font-optical-sizing: auto;
+		font-weight: 700;
 		line-height: var(--leading-tight);
 		text-wrap: balance;
 		overflow-wrap: break-word;
@@ -257,7 +257,7 @@
 		font: inherit;
 	}
 	:global(button) {
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 	}
 	:global(::selection) {
 		background: color-mix(in srgb, var(--mustard) 40%, transparent);
@@ -344,7 +344,7 @@
 	}
 	nav a,
 	.link {
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: clamp(var(--text-xs), 0.4rem + 0.55vw, var(--text-sm));
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -483,7 +483,7 @@
 	}
 	.drawer-nav a,
 	.drawer-nav .link {
-		font-family: var(--font-mono);
+		font-family: var(--font-ui);
 		font-size: var(--text-base);
 		letter-spacing: 0.08em;
 		text-transform: uppercase;

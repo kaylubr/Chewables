@@ -1,23 +1,31 @@
 @font-face {
   font-display: swap;
-  font-family: "Fraunces";
+  font-family: "Merriweather";
   font-style: normal;
-  font-weight: 600;
-  src: url("/fonts/fraunces.woff2") format("woff2");
+  font-weight: 400;
+  src: url("/fonts/merriweather.woff2") format("woff2");
 }
 
 @font-face {
   font-display: swap;
-  font-family: "Philosopher";
+  font-family: "Lato";
   font-style: normal;
   font-weight: 400;
-  src: url("/fonts/philosopher.woff2") format("woff2");
+  src: url("/fonts/lato.woff2") format("woff2");
 }
 
 @font-face {
   font-display: swap;
-  font-family: "Lustria";
+  font-family: "Merriweather";
   font-style: normal;
-  font-weight: 400;
-  src: url("/fonts/lustria.woff2") format("woff2");
+  font-weight: 700;
+  src: url("/fonts/merriweather-bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Lato";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/fonts/lato-bold.woff2") format("woff2");
 }
