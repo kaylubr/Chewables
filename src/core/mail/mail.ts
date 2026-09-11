@@ -7,22 +7,9 @@ interface MailMessage {
 	to: string;
 	subject: string;
 	html: string;
-	/** Logged instead of sent when no provider is configured, so the flow stays testable. */
 	link: string;
 }
 
-/**
- * Send one transactional email.
- *
- * In dev/test (no RESEND_API_KEY configured) this falls back to logging the
- * link so the full flow is exercisable without a mail provider.
- *
- * The Resend call is deliberately fire-and-forget: awaiting a network call here
- * would let an attacker time the sign-up/send-verification responses to
- * enumerate valid accounts. The rejection is caught so a mail failure can never
- * become an unhandled promise rejection. This relies on the process staying
- * alive after the response is sent (Docker/PM2/systemd).
- */
 async function sendMail({ to, subject, html, link }: MailMessage): Promise<void> {
 	if (!resend) {
 		console.info(
@@ -30,6 +17,8 @@ async function sendMail({ to, subject, html, link }: MailMessage): Promise<void>
 		);
 		return;
 	}
+	console.log(config.mail.from);
+	
 	void resend.emails
 		.send({
 			from: config.mail.from,
@@ -47,9 +36,6 @@ export interface VerificationEmail {
 	verifyUrl: string;
 }
 
-/**
- * Send the email-verification email for a newly registered address.
- */
 export async function sendVerificationEmail({
 	to,
 	verifyUrl,
@@ -67,11 +53,6 @@ export async function sendVerificationEmail({
 	});
 }
 
-/**
- * Send the confirmation link for a new address during an email change. Better
- * Auth routes this through the same `sendVerificationEmail` callback, so the
- * caller picks the wording; the link itself is identical.
- */
 export async function sendNewEmailVerification({
 	to,
 	verifyUrl,

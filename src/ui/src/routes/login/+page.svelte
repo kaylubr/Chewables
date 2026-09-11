@@ -14,8 +14,6 @@
 	let googlePending = $state(false);
 	let googleFlow: GoogleAuthController | null = null;
 
-	// OAuth failures that arrive via a full-page redirect (no popup opener to
-	// post back to) surface here as a query param.
 	onMount(() => {
 		const oauthError = page.url.searchParams.get('oauth_error');
 		if (oauthError) {

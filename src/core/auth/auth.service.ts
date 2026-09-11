@@ -37,19 +37,11 @@ export const auth = betterAuth({
 	trustedOrigins: config.corsOrigin ? [config.corsOrigin] : [],
 	emailAndPassword: {
 		enabled: true,
-		// Verification is a standalone feature and a prerequisite for
-		// social-account linking (see account.accountLinking below), but it
-		// does NOT gate password login: unverified users may still sign in
-		// with their password and verify later.
 		requireEmailVerification: false,
 		autoSignIn: true,
 	},
 	emailVerification: {
 		sendVerificationEmail: async ({ user, url }) => {
-			// Better Auth routes both signup verification and the "confirm your
-			// new address" email through this one callback. A change is in
-			// flight while the stored row still holds the old address, so a
-			// mismatch is what separates the two wordings.
 			const row = await AuthRepo.findById(user.id);
 			if (row && row.email !== user.email) {
 				await sendNewEmailVerification({ to: user.email, verifyUrl: url });
@@ -57,20 +49,9 @@ export const auth = betterAuth({
 			}
 			await sendVerificationEmail({ to: user.email, verifyUrl: url });
 		},
-		// Send a verification email at signup so every new account can prove
-		// its email before linking social providers.
 		sendOnSignUp: true,
-		// Better-Auth appends the callbackURL (default: backend `/`) to the
-		// verify-email URL. Because the SPA sits on a separate origin in dev,
-		// `register` / `loginWithUsername` pass the SPA auth-popup page as the
-		// callbackURL so verification lands the user back in the app. See
-		// `../ui/static/auth-popup.html`.
 		autoSignInAfterVerification: true,
 		afterEmailVerification: async (user, request) => {
-			// Fires on signup verification too, but only a completed email
-			// CHANGE carries the signed "changed from" cookie. When it does and
-			// the address has moved on, the recovery identity changed — drop
-			// the user's other sessions, keeping the current one alive.
 			const from = readEmailChangeCookie(
 				request
 					? cookieFromHeader(request.headers.get('cookie') ?? undefined, EMAIL_CHANGE_COOKIE)
@@ -81,23 +62,15 @@ export const auth = betterAuth({
 			try {
 				await auth.api.revokeOtherSessions({ headers: request.headers });
 			} catch (error) {
-				// Never fail the verification itself over this; the settings
-				// landing page retries the same supported call.
 				console.error('[auth] could not revoke other sessions after email change', error);
 			}
 		},
 	},
 	user: {
 		changeEmail: {
-			// Only the new address is verified: `sendChangeEmailConfirmation`
-			// (old-address approval) and `updateEmailWithoutVerification` are
-			// both deliberately left off.
 			enabled: true,
 		},
 		deleteUser: {
-			// In-app confirmation deletes immediately. Without
-			// `sendDeleteAccountVerification` Better Auth never emails a link,
-			// so no GET that a mail scanner can prefetch deletes an account.
 			enabled: true,
 		},
 	},
