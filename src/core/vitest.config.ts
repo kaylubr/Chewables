@@ -6,7 +6,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: 'node',
-		include: ['auth/**/*.test.ts', 'photos/**/*.test.ts'],
+		include: ['auth/**/*.test.ts', 'mail/**/*.test.ts', 'photos/**/*.test.ts'],
 		globalSetup: './utils/test/global-setup.ts',
 		setupFiles: ['./utils/test/setup.ts'],
 		testTimeout: 20000,

@@ -10,15 +10,48 @@ interface MailMessage {
 	link: string;
 }
 
+/**
+ * Domains that can never receive mail: RFC 2606 reserves example.com/net/org,
+ * .test, .invalid and .localhost, and Resend refuses them before delivery.
+ */
+const UNDELIVERABLE_DOMAINS = [
+	"example.com",
+	"example.net",
+	"example.org",
+	"example",
+	"test",
+	"invalid",
+	"localhost",
+];
+
+/** True for an address Resend will always reject, e.g. someone@example.com. */
+export function isUndeliverable(to: string): boolean {
+	const domain = to.slice(to.lastIndexOf("@") + 1).toLowerCase();
+	return UNDELIVERABLE_DOMAINS.some(
+		(reserved) => domain === reserved || domain.endsWith(`.${reserved}`),
+	);
+}
+
+function errorMessage(err: unknown): string {
+	return err instanceof Error ? err.message : String(err);
+}
+
 async function sendMail({ to, subject, html, link }: MailMessage): Promise<void> {
-	if (!resend) {
-		console.info(
-			`[mail] no RESEND_API_KEY configured; "${subject}" for ${to}: ${link}`,
-		);
+	// Log the link instead of sending when there is nothing to send with, in
+	// tests, or to an address that can never receive mail.
+	if (!resend || config.isTest || isUndeliverable(to)) {
+		const reason = !resend
+			? "no RESEND_API_KEY"
+			: config.isTest
+				? "suppressed in testing"
+				: "undeliverable address";
+		console.info(`[mail] not sent (${reason}); "${subject}" for ${to}: ${link}`);
 		return;
 	}
-	console.log(config.mail.from);
-	
+
+	// The SDK resolves with `{ error }` rather than rejecting, so a refused send
+	// has to be read off the result. Still fire-and-forget: a mail outage must
+	// not fail the request that triggered it.
 	void resend.emails
 		.send({
 			from: config.mail.from,
@@ -26,8 +59,17 @@ async function sendMail({ to, subject, html, link }: MailMessage): Promise<void>
 			subject,
 			html,
 		})
+		.then(({ error }) => {
+			if (error) {
+				console.error(
+					`[mail] delivery failed for "${subject}" to ${to}: ${error.message}`,
+				);
+			}
+		})
 		.catch((err) => {
-			console.error(`[mail] failed to send "${subject}" to ${to}`, err);
+			console.error(
+				`[mail] delivery failed for "${subject}" to ${to}: ${errorMessage(err)}`,
+			);
 		});
 }
 
