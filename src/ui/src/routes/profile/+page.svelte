@@ -1,16 +1,15 @@
 <script lang="ts">
 import { goto } from "$app/navigation";
-import { ApiError, api } from "$lib/api/client";
+import { ApiError } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
 import Avatar from "$lib/components/Avatar.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 import Lightbox from "$lib/components/Lightbox.svelte";
-import { frameAspectRatio } from "$lib/frames/frames";
+import { PhotoCollection } from "$lib/photos/collection.svelte";
+import PhotoTile from "$lib/photos/PhotoTile.svelte";
 import { toastStore } from "$lib/toasts/toasts.svelte";
-import type { AuthUser, SavedPhoto } from "@chewable/shared";
+import type { AuthUser } from "@chewable/shared";
 import { onMount } from "svelte";
-
-type DisplayPhoto = SavedPhoto & { displayUrl?: string };
 
 // The profile is a teaser for /photos, not a second copy of the gallery: it
 // signs URLs for the newest few only. Eight also fills two clean rows at the
@@ -20,31 +19,18 @@ const RECENT_LIMIT = 8;
 // Snapshot of the authenticated user for the template, so Svelte can narrow
 // it inside the `{:else}` branch after the auth gate.
 let user = $state<AuthUser | null>(null);
-let photos = $state<DisplayPhoto[]>([]);
-// Only the newest few photos get a signed URL, so this stays a teaser of the
-// gallery at /photos rather than a second copy of it.
-let recent = $state<DisplayPhoto[]>([]);
-let photosLoading = $state(true);
-let photosFailed = $state(false);
-// Index into `viewable`, or null while the viewer is closed.
+// Holds the newest few only, so this stays a teaser of the gallery at /photos
+// rather than a second copy of it.
+const collection = new PhotoCollection();
+// Index into `collection.viewable`, or null while the viewer is closed.
 let lightboxIndex = $state<number | null>(null);
 
 // Resending verification confirms first, matching the same action in Settings.
 let verifyPending = $state(false);
 let verifying = $state(false);
 
-// The viewer walks only the signed photos, which on this page is the recent
-// strip: the full set stays a click away in the gallery.
-const viewable = $derived(
-	recent
-		.filter((p): p is DisplayPhoto & { displayUrl: string } =>
-			Boolean(p.displayUrl),
-		)
-		.map((p) => ({ id: p.id, url: p.displayUrl })),
-);
-
-function openViewer(photo: DisplayPhoto) {
-	const at = viewable.findIndex((p) => p.id === photo.id);
+function openViewer(photo: { id: string }) {
+	const at = collection.viewerIndex(photo.id);
 	if (at !== -1) lightboxIndex = at;
 }
 
@@ -58,35 +44,6 @@ function photoDate(iso: string): string {
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return "";
 	return date.toLocaleDateString();
-}
-
-async function loadPhotos() {
-	photosFailed = false;
-	photosLoading = true;
-	try {
-		const data = await api.listPhotos();
-		photos = data;
-		// The API returns photos oldest-first, so the newest are at the tail.
-		const newest = data.slice(-RECENT_LIMIT).reverse();
-		recent = await Promise.all(
-			newest.map(async (p) => {
-				try {
-					const { url } = await api.photoUrl(p.id);
-					return { ...p, displayUrl: url };
-				} catch {
-					return { ...p, displayUrl: undefined };
-				}
-			}),
-		);
-	} catch {
-		// The profile is a secondary surface, so a quiet inline fallback beats
-		// a toast here.
-		photosFailed = true;
-		photos = [];
-		recent = [];
-	} finally {
-		photosLoading = false;
-	}
 }
 
 async function sendVerification() {
@@ -112,7 +69,9 @@ onMount(async () => {
 		return;
 	}
 	user = loaded;
-	await loadPhotos();
+	// The profile is a secondary surface, so a load failure stays an inline
+	// fallback rather than a toast.
+	await collection.load(RECENT_LIMIT);
 });
 </script>
 
@@ -163,24 +122,30 @@ onMount(async () => {
 		<dl class="stats">
 			<div class="stat">
 				<dt>Photos</dt>
-				<dd>{photosLoading || photosFailed ? '—' : photos.length}</dd>
+				<dd>{collection.loading || collection.failed ? '—' : collection.photos.length}</dd>
 			</div>
 		</dl>
 
 		<section class="recent">
 			<div class="recent-head">
 				<h2>Recent photos</h2>
-				{#if photos.length > 0}
+				{#if collection.photos.length > 0}
 					<a class="view-all" href="/photos">View all →</a>
 				{/if}
 			</div>
 
-			{#if photosLoading}
+			{#if collection.loading}
 				<p class="empty">Loading…</p>
-			{:else if photosFailed}
+			{:else if collection.failed}
 				<p class="empty">Couldn't load your photos.</p>
-				<button type="button" class="retry" onclick={loadPhotos}>Retry</button>
-			{:else if photos.length === 0}
+				<button
+					type="button"
+					class="retry"
+					onclick={() => void collection.load(RECENT_LIMIT)}
+				>
+					Retry
+				</button>
+			{:else if collection.photos.length === 0}
 				<div class="empty-state">
 					<h2>No photos yet</h2>
 					<p>Your first one starts in the photobooth.</p>
@@ -188,23 +153,13 @@ onMount(async () => {
 				</div>
 			{:else}
 				<div class="grid">
-					{#each recent as photo (photo.id)}
-						<figure class="tile" style:aspect-ratio={frameAspectRatio(photo.frame)}>
-							<button
-								type="button"
-								class="open"
-								aria-label={`View the photo from ${photoDate(photo.createdAt)}`}
-								disabled={!photo.displayUrl}
-								onclick={() => openViewer(photo)}
-							>
-								{#if photo.displayUrl}
-									<img src={photo.displayUrl} alt="Saved photobooth result" loading="lazy" />
-								{:else}
-									<div class="placeholder">unavailable</div>
-								{/if}
-							</button>
-							<span class="frame-label">{photo.frame}</span>
-						</figure>
+					{#each collection.photos as photo (photo.id)}
+						<PhotoTile
+							{photo}
+							label={photoDate(photo.createdAt)}
+							zoom
+							onOpen={() => openViewer(photo)}
+						/>
 					{/each}
 				</div>
 			{/if}
@@ -214,7 +169,7 @@ onMount(async () => {
 
 {#if lightboxIndex !== null}
 	<Lightbox
-		photos={viewable}
+		photos={collection.viewable}
 		index={lightboxIndex}
 		onClose={() => (lightboxIndex = null)}
 	/>
@@ -381,68 +336,6 @@ onMount(async () => {
 		gap: 0.75rem;
 		/* Keeps each tile at its own ratio instead of stretching it to the row. */
 		align-items: start;
-	}
-
-	.tile {
-		position: relative;
-		margin: 0;
-		background: var(--surface-2);
-		border-radius: 0.75rem;
-		overflow: hidden;
-	}
-
-	.open {
-		display: block;
-		width: 100%;
-		height: 100%;
-		padding: 0;
-		border: none;
-		background: none;
-		cursor: zoom-in;
-	}
-
-	.open:disabled {
-		cursor: default;
-	}
-
-	.tile img,
-	.placeholder {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-	}
-
-	.tile img {
-		transition: transform 0.2s ease;
-	}
-
-	.open:hover img {
-		transform: scale(1.03);
-	}
-
-	.placeholder {
-		display: grid;
-		place-items: center;
-		color: var(--ink-faint);
-		font-size: var(--text-sm);
-	}
-
-	/* Same frame chip as the gallery, so a tile reads the same in both places.
-	   Sits above the button; pointer-events keeps it from eating the click. */
-	.frame-label {
-		position: absolute;
-		left: 0.5rem;
-		bottom: 0.5rem;
-		padding: 0.15rem 0.4rem;
-		font-family: var(--font-ui);
-		font-size: var(--text-xs);
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--stage-ink);
-		background: rgb(0 0 0 / 0.45);
-		border-radius: 0.3rem;
-		pointer-events: none;
 	}
 
 	.empty {
