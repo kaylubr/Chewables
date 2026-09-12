@@ -44,13 +44,18 @@
 
 <style>
 	.error-page {
+		/* Without border-box the padding below sits on top of min-height, which
+		   pushed the page past the viewport and produced a scrollbar. */
+		box-sizing: border-box;
 		max-width: 40rem;
 		margin: 0 auto;
 		/* Fills the space under the sticky header so the block centres in the
-		   viewport rather than sitting at the top. `safe` keeps the content
-		   reachable when it is taller than a short viewport. */
-		min-height: calc(100dvh - 6rem);
-		padding: 2rem 1.5rem;
+		   viewport rather than sitting at the top. The allowance covers the
+		   header (brand clamp + padding, ~6.75rem at its tallest), so the page
+		   never exceeds the viewport. `safe` keeps the content reachable when it
+		   is taller than a short viewport. */
+		min-height: calc(100dvh - 7rem);
+		padding: 1.5rem;
 		display: grid;
 		place-content: center;
 		place-content: safe center;
