@@ -87,11 +87,12 @@ export async function listUserPhotos(userId: string): Promise<SavedPhoto[]> {
 export async function getPhotoUrl(
   userId: string,
   photoId: string,
+  store: Storage = storage,
 ): Promise<string> {
   const row = await PhotoRepo.findOwnedById(userId, photoId);
   const photo = row[0];
   if (!photo) throw new PhotoNotFoundError();
-  return storage.url(photo.storageKey);
+  return store.url(photo.storageKey);
 }
 
 export async function deletePhoto(input: {

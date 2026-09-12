@@ -1,11 +1,9 @@
 import type { RequestHandler } from 'express';
-import multer from 'multer';
 import { getSessionUser } from '../auth/auth.service.js';
 import { photoIdParamsSchema } from './photos.schema.js';
 import {
 	InvalidFrameError,
 	InvalidImageError,
-	MAX_UPLOAD_BYTES,
 	PhotoNotFoundError,
 	createPhoto,
 	deletePhoto,
@@ -20,11 +18,6 @@ declare global {
 		}
 	}
 }
-
-const upload = multer({
-	storage: multer.memoryStorage(),
-	limits: { fileSize: MAX_UPLOAD_BYTES },
-});
 
 export const requireUser: RequestHandler = async (req, res, next) => {
 	const user = await getSessionUser(req.headers);
