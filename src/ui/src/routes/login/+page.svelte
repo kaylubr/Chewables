@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
+	import Modal from '$lib/components/Modal.svelte';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { auth } from '$lib/auth/store.svelte';
 	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
@@ -121,13 +122,13 @@
 </main>
 
 {#if googlePending}
-	<div class="modal-backdrop">
+	<Modal onClose={cancelGoogle}>
 		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="googleAuthTitle">
 			<span class="spinner" aria-hidden="true"></span>
 			<p id="googleAuthTitle" class="modal-text">Connecting your Google account…</p>
 			<button type="button" class="modal-cancel" onclick={cancelGoogle}>Cancel</button>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <style>
@@ -233,15 +234,6 @@
 		margin-top: 1.25rem;
 		font-size: var(--text-base);
 		color: var(--ink-soft);
-	}
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		background: rgb(0 0 0 / 0.45);
-		z-index: 50;
-		padding: 1rem;
 	}
 	.modal {
 		display: grid;

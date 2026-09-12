@@ -3,6 +3,7 @@ import { goto } from "$app/navigation";
 import { ApiError, api } from "$lib/api/client";
 import { auth } from "$lib/auth/store.svelte";
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+import Modal from "$lib/components/Modal.svelte";
 import { downloadDataUrl, photoFilename } from "$lib/photobooth/download";
 import { booth } from "$lib/photobooth/store.svelte";
 import { toastStore } from "$lib/toasts/toasts.svelte";
@@ -97,18 +98,19 @@ function startOver() {
 </main>
 
 {#if showSignInPrompt}
-	<button type="button" class="modal-backdrop" aria-label="Close" onclick={() => (showSignInPrompt = false)}></button>
-	<div class="modal" role="dialog" aria-modal="true" aria-labelledby="signin-title" tabindex="-1">
-		<h2 id="signin-title">Sign in to save</h2>
-		<p>
-			Saving requires an account. This photo lives only in this browser tab — if you
-			leave to sign in, you'll need to take it again to save it.
-		</p>
-		<div class="modal-actions">
-			<button type="button" class="secondary" onclick={() => (showSignInPrompt = false)}>Cancel</button>
-			<button type="button" class="primary" onclick={confirmSignIn}>Sign in to save</button>
+	<Modal backdropClose onClose={() => (showSignInPrompt = false)}>
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="signin-title" tabindex="-1">
+			<h2 id="signin-title">Sign in to save</h2>
+			<p>
+				Saving requires an account. This photo lives only in this browser tab — if you
+				leave to sign in, you'll need to take it again to save it.
+			</p>
+			<div class="modal-actions">
+				<button type="button" class="secondary" onclick={() => (showSignInPrompt = false)}>Cancel</button>
+				<button type="button" class="primary" onclick={confirmSignIn}>Sign in to save</button>
+			</div>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 {#if confirmSave}
@@ -207,32 +209,15 @@ function startOver() {
 			min-height: 48px;
 		}
 	}
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgb(0 0 0 / 0.45);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1.5rem;
-		z-index: 40;
-		border: none;
-		cursor: pointer;
-	}
 	.modal {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
 		background: var(--surface);
 		color: var(--ink);
 		border-radius: 0.75rem;
 		padding: 1.5rem;
 		max-width: 26rem;
-		width: calc(100% - 3rem);
+		width: 100%;
 		box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
 		text-align: left;
-		z-index: 41;
 	}
 	.modal h2 {
 		font-size: var(--text-xl);

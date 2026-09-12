@@ -1,13 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Modal from './Modal.svelte';
 
 	/**
 	 * Confirmation dialog for an action that changes something.
 	 *
-	 * Focuses the cancel button when it opens (the least destructive choice),
-	 * closes on Escape or a backdrop click, and hands focus back to whatever
-	 * was focused before it opened. Callers mark the page behind it `inert` so
-	 * the dialog is the only thing reachable.
+	 * Focuses the cancel button when it opens (the least destructive choice)
+	 * and closes on Escape; <Modal> owns the backdrop and returns focus to
+	 * whatever was focused before it opened. Callers mark the page behind it
+	 * `inert` so the dialog is the only thing reachable.
 	 */
 	let {
 		open,
@@ -38,38 +39,17 @@
 	// Several dialogs can be mounted at once (each closed), so the label id has
 	// to be unique per instance rather than a fixed string.
 	const titleId = `confirm-title-${Math.random().toString(36).slice(2, 9)}`;
-
-	let cancelButton = $state<HTMLButtonElement | undefined>();
-	let returnFocus: HTMLElement | null = null;
-	let wasOpen = false;
-
-	$effect(() => {
-		if (open) {
-			if (!wasOpen) {
-				returnFocus = document.activeElement as HTMLElement | null;
-				wasOpen = true;
-			}
-			cancelButton?.focus();
-			return;
-		}
-		if (!wasOpen) return;
-		wasOpen = false;
-		// A no-op when the trigger is gone (for example the deleted photo), in
-		// which case the caller moves focus somewhere sensible afterwards.
-		returnFocus?.focus();
-		returnFocus = null;
-	});
 </script>
 
 {#if open}
-	<div class="modal-backdrop">
+	<Modal onClose={onCancel}>
 		<div class="modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
 			<h2 id={titleId}>{title}</h2>
 			{#if children}
 				<div class="modal-body">{@render children()}</div>
 			{/if}
 			<div class="modal-actions">
-				<button type="button" class="cancel" bind:this={cancelButton} onclick={onCancel}>
+				<button type="button" class="cancel" onclick={onCancel}>
 					{cancelLabel}
 				</button>
 				<button
@@ -83,29 +63,10 @@
 				</button>
 			</div>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
-<svelte:window
-	onkeydown={(e) => {
-		if (open && e.key === 'Escape') {
-			e.preventDefault();
-			onCancel();
-		}
-	}}
-/>
-
 <style>
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		background: rgb(0 0 0 / 0.45);
-		padding: 1.5rem;
-		z-index: 70;
-	}
-
 	.modal {
 		width: min(26rem, 100%);
 		padding: 1.5rem;
