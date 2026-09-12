@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A privacy-conscious photobooth web app. Guests use the full experience (frame selection, webcam capture, Canvas composition, download) with no account; authentication is only required to permanently save a finished photo. See [README.md](README.md) for the stack, repo layout, setup, and current status.
+A privacy-conscious photobooth web app. Guests use the full experience (frame selection, webcam capture, Canvas composition, download) with no account; authentication is only required to permanently save a finished photo. See [README.md](README.md) for an overview and [docs/onboarding.md](docs/onboarding.md) for detailed setup, QA, and current status.
 
 ## Code Style Guidelines
 
@@ -43,4 +43,3 @@ A privacy-conscious photobooth web app. Guests use the full experience (frame se
 - Format/lint: `npm run format` (Biome)
 - Minimum test coverage: auth behavior, password hashing, frame validation, photo ownership, photo create/delete, invalid uploads.
 - After finishing a stage: run relevant tests, verify nothing existing broke, then commit.
-- See the `photobooth-plan` skill for the full staged build order and commit sequence.

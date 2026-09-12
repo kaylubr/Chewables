@@ -1,121 +1,127 @@
 # Chewables
 
-A privacy-conscious photobooth web app. Guests can use the full experience — frame selection, webcam capture, Canvas composition, download — with no account. Authentication is only required to permanently save a finished photo.
+A photobooth web app. Pick a frame, take a few photos with your webcam, and get a
+finished photo you can download — or save it to your account and come back to it
+later.
 
-> **Status:** The full guest flow works end to end: frame selection → webcam capture (5s countdown between shots) → in-browser Canvas composition → download. Signed-in users can save finished photos to a private gallery and delete them. Agent-facing conventions and the stage plan live in [AGENTS.md](AGENTS.md).
+> **Status:** Under active development. The guest photobooth flow and the
+> account, gallery, and settings features work; some surfaces are still being
+> built out. See [Gotchas, future direction, and other notes](#gotchas-future-direction-and-other-notes).
 
-## Stack
+## What is this? What does it do?
 
-| Layer    | Technology                                                        |
-| -------- | ----------------------------------------------------------------- |
-| Backend  | Node.js, TypeScript, Express 5, Better-Auth, Drizzle ORM           |
-| Frontend | SvelteKit (Svelte 5, runes), TypeScript, Vite                     |
-| Testing  | Backend: Vitest + Supertest. Frontend: Vitest + jsdom             |
-| Database | PostgreSQL 17 (Docker Compose for local dev), Drizzle Kit migrations |
-| Storage  | S3-compatible object storage — MinIO in local dev                 |
-| Auth     | Better-Auth cookie sessions (email/password + Google OAuth)       |
+Chewables is a photobooth that runs in the browser. Anyone can use it without an
+account:
 
-## Repository layout
+- **Pick a frame**, then take the number of photos that frame needs — the camera
+  counts you down before each shot.
+- The shots are **composed into the frame in your browser** and offered as a WebP
+  download. Nothing is uploaded while you use the booth.
+- **Create an account** to save finished photos to a private gallery, view them
+  full size, and delete them. Sign-in is email/password or Google.
+- Account pages cover a profile, the photo gallery, and settings (email
+  verification, changing email or password, deleting your account).
 
-```
-src/core/   Express backend (npm workspace @chewable/core)
-  index.ts         Bootstrap only: start the listener
-  app.ts           App wiring only: middleware, routes, global error handler
-  config.ts        Centralized env config (single import; no process.env elsewhere)
-  db/              Table definitions, one file per table + client (db/index.ts)
-  types/           Backend-only domain types (one file per concept)
-  lib/             Shared helpers and the frame vocabulary (frames.ts)
-  adapters/        Boundary adapters (storage/ = S3-compatible seam, MinIO in dev)
-  auth/            Auth domain: routes, controller, service, repo, schema, tests
-  photos/          Photos domain: routes, controller, service, repo, schema, tests
-  utils/           Cross-cutting utilities, including the shared test harness
-src/shared/ Shared contract types used by both backend and frontend (@chewable/shared)
-src/ui/     SvelteKit frontend (npm workspace @chewable/ui)
-  src/lib/frames/         Frame types + centralized frame registry
-  src/lib/photobooth/     Booth session state machine, capture controller, composition
-  src/lib/auth/           Session store (cookie-based) + Google sign-in helper
-  src/lib/api/            Typed backend API client (shared types)
-  src/routes/             Landing, /photobooth/{frame,camera,result}, /login, /register, /photos
-  static/frames/          Frame overlay PNGs (test.png is a dev placeholder)
-compose.yml PostgreSQL 17 + MinIO services
-```
+Under the hood it is a Node/Express backend and a SvelteKit frontend in one npm
+workspaces monorepo, with Postgres for metadata and S3-compatible object storage
+for images. The full stack table and repository layout live in
+[docs/onboarding.md](docs/onboarding.md).
 
-## Prerequisites
+## Who is responsible for maintaining it?
 
-- [Node.js](https://nodejs.org/) 20+ and npm
-- [Docker](https://www.docker.com/) (local Postgres + MinIO)
+Chewables is a solo-maintained project with no formal support or response
+commitment. For security reports, follow [SECURITY.md](SECURITY.md) rather than
+opening a public issue.
 
-## Local development
+## How do I set up my environment?
 
-### 1. Start the services
+Prerequisites: Node.js 22.12+ and Docker. The short version:
 
 ```sh
 docker compose up -d
-```
-
-Runs `postgres:17-alpine` on host port **5434** and MinIO on **9000/9001** (ports chosen to avoid conflicts with other local Postgres instances).
-
-### 2. Install + configure
-
-```sh
+cp src/core/.env.example src/core/.env
+cp src/ui/.env.example src/ui/.env 
 npm install
-cp .env.example .env        # backend + shared config
-cp src/ui/.env.example src/ui/.env   # frontend PUBLIC_API_BASE
-```
-
-The backend reads `DATABASE_URL`, `S3_*`, `AUTH_SECRET`, `GOOGLE_*`, and `SESSION_EXPIRES_IN` from `.env` — credentials are never hardcoded (see `src/core/config.ts`).
-
-### 3. Run migrations
-
-```sh
 npm run db:migrate
 ```
 
-### 4. Run the backend
+Two things these commands deliberately leave to you: create the MinIO bucket
+(`chewables`, via the console at <http://localhost:9001>), and create the
+`chewables_test` database before running the tests. Both are covered, along with
+every environment variable and the required Google and Resend setup, in
+[docs/onboarding.md](docs/onboarding.md).
+
+## How do I build and run this?
+
+Local development uses two terminals:
 
 ```sh
 npm run dev
+cd src/ui && npm run dev
 ```
 
-Uses `tsx watch` with `NODE_ENV=development`. The API is served at <http://localhost:8000> with health at `GET /api/health`.
+Open <http://localhost:5173>. The frontend reaches the backend through
+`PUBLIC_API_BASE`, so both servers must be running for sign-in, saving, and the
+gallery. There is currently no working single-command production build — see the
+gotchas below.
 
-### 5. Run the frontend
+Step-by-step detail is in
+[docs/onboarding.md](docs/onboarding.md#8-build-and-run).
+
+## Setup notes
+
+- Environment files live per workspace — `src/core/.env` and `src/ui/.env`. There
+  is no root `.env`.
+- The local services use non-default ports on purpose: Postgres `5434`, MinIO
+  `9000` (API) and `9001` (console).
+- Required backend variables fail loudly at boot if missing: `DATABASE_URL` and
+  `AUTH_SECRET`. Everything else has a default.
+- With no `RESEND_API_KEY`, verification emails are printed to the backend console
+  instead of sent.
+- Docker volumes persist across restarts; `docker compose down -v` wipes the
+  databases and the storage bucket.
+
+Full detail in [docs/onboarding.md](docs/onboarding.md#setup-notes).
+
+## QA notes, tips, tricks, traps
 
 ```sh
-npm run build -w @chewable/ui   # or: cd src/ui && npm run dev
+npm test
+npm run test:ui
+npm run format:check
 ```
 
-In production, `npm run build` builds both workspaces and Express serves the SvelteKit output from the same origin.
+- Backend tests hit a real Postgres test database and reset it between tests; the
+  frontend tests run in jsdom.
+- Types: `npx tsc -p src/core/tsconfig.json --noEmit` for the backend and
+  `npm run check -w @chewable/ui` for the frontend. The root `npm run check` is
+  currently broken.
+- Two easy traps: `chewables_test` must exist before `npm test`, and MinIO is not
+  needed for the test suite (it uses an in-memory storage adapter).
 
-## Useful commands
+The coverage expectations and the rest of the tips live in
+[docs/onboarding.md](docs/onboarding.md#qa-notes-tips-tricks-traps).
 
-| Command                              | What it does                              |
-| ------------------------------------ | ----------------------------------------- |
-| `docker compose up -d`               | Start local Postgres + MinIO              |
-| `npm run db:migrate`                 | Apply database migrations (drizzle-kit)   |
-| `npm run dev`                        | Run the Express backend with tsx watch    |
-| `npm test`                           | Run the backend Vitest/Supertest suite     |
-| `npm run test:ui`                    | Run the frontend Vitest suite              |
-| `npm run check`                      | Type-check all workspaces (tsc --noEmit)   |
-| `npm run format`                     | Format + lint the repo (Biome)            |
+## Gotchas, future direction, and other notes
 
-## Frames
+A few things worth knowing before touching the code:
 
-Frames are **not** a database table or a backend concern — they are a fixed, frontend-owned set. Each frame is a static PNG overlay plus a `FrameDefinition` entry:
+- **The production build is not wired up.** The root `npm start` and the static
+  path in `app.ts` do not line up with where each workspace actually builds.
+- **Only one frame exists** (`FILM`, using `static/frames/classic.png`). The frame
+  vocabulary lists four ids, but the rest are placeholders.
+- **Frame overlay PNGs need real alpha transparency**, and `photoSlots` must be
+  measured against the artwork — the composed image draws photos first and the
+  overlay on top.
+- **The Google redirect URI is the backend's**:
+  `http://localhost:8000/api/auth/callback/google`.
+- **Guest privacy is an invariant**: nothing is uploaded unless the user chooses
+  to save.
 
-- Type definitions live in `src/ui/src/lib/frames/types.ts`. `FrameId` is the stable vocabulary (`VINTAGE`, `POLAROID`, `FILM`, `CLASSIC`).
-- The registry `src/ui/src/lib/frames/frames.ts` maps each id to its overlay image, photo count, canvas size, and photo-slot rectangles.
-- Adding a frame = drop the PNG in `static/frames/` and add one entry to the registry. No per-frame component, no backend/DB change, no migration.
-- Capture logic reads only `photoCount`; composition reads the full definition.
+Planned work includes real frame artwork, more frames, a production deployment
+path, a health endpoint, and client-side encryption as a deliberate later stage.
+The full list is in [docs/onboarding.md](docs/onboarding.md#future-direction).
 
-**Currently registered:** `FILM` (35mm film strip, 4 photos, 1620×2880 canvas). Only `test.png` exists as a dev placeholder — real artwork comes from the designers.
-
-## Architecture notes
-
-- **Privacy first:** captured webcam frames and the composed result stay client-side. No DB record exists just for opening the photobooth, and guest photos are never uploaded unless the user actively chooses to save. Saved photos travel over TLS in production and live in the user's private object-storage prefix.
-- **Client-side booth state:** the frame → capture → result flow lives in module-scoped runes (`store.svelte.ts`) and resets on reload. A guarded state machine (`session.ts`) makes illegal transitions (e.g. duplicate captures) impossible.
-- **Auth is only for persistence:** Better-Auth cookie sessions protect the photo endpoints; hashed passwords and Google OAuth are handled by Better-Auth. Logout revokes the session server-side.
-- **Data model stays small:** `User` (id, email, password_hash, created_at) and `Photo` (id, user_id, frame, storage_key, created_at). No Frame table; sessions live in Better-Auth's `session` table.
-- **Storage:** object storage holds images; Postgres holds only metadata + server-generated `storage_key` (e.g. `users/{user_id}/photos/{photo_id}.webp`). The client never chooses the path, and every photo read/delete verifies ownership first.
-- **Server derives identity:** the backend never trusts a client-supplied user ID; the current user always comes from the authenticated session (cookie).
-- **Encryption status:** transport security, auth, authorization, and storage security are in place. Photos are **not** client-side encrypted — the server (and an operator with the storage keys) can read saved images. True end-to-end privacy via client-side encryption is a deliberate later stage, not yet implemented.
+**More docs:** [docs/onboarding.md](docs/onboarding.md) ·
+[docs/adr/](docs/adr/) · [docs/glossary.md](docs/glossary.md) ·
+[AGENTS.md](AGENTS.md) (conventions for AI agents) · [LICENSE](LICENSE)
