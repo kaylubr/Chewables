@@ -5,7 +5,7 @@
  * selected frame and captures survive navigation from frame -> camera ->
  * result. Lives only in the browser; reloading resets the flow.
  */
-import type { FrameId } from '../frames/types';
+import type { FrameId } from '@chewable/shared';
 import { FRAME_BY_ID } from '../frames/frames';
 import { initialBooth, type BoothSession, type PhotoCapture } from './session';
 

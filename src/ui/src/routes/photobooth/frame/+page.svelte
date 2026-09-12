@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { FRAMES } from '$lib/frames/frames';
-	import type { FrameId } from '$lib/frames/types';
+	import type { FrameId } from '@chewable/shared';
 	import { booth } from '$lib/photobooth/store.svelte';
 
 	let selected = $state<FrameId | null>(null);

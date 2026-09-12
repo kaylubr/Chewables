@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
-import { FRAME_IDS } from "@chewable/shared";
+import { FRAME_IDS, PHOTO_CONTENT_TYPES } from "@chewable/shared";
 import { isSupportedFrame } from "../lib/frames.js";
 import {
   InvalidImageError,
   MAX_UPLOAD_BYTES,
-  ALLOWED_CONTENT_TYPES,
   storageKeyFor,
   validateUpload,
 } from "./photos.service.js";
@@ -26,7 +25,7 @@ describe("frame validation", () => {
 
 describe("upload validation", () => {
   it("accepts valid image types", () => {
-    for (const ct of ALLOWED_CONTENT_TYPES) {
+    for (const ct of PHOTO_CONTENT_TYPES) {
       expect(() => validateUpload(ct, 100)).not.toThrow();
     }
   });

@@ -8,7 +8,7 @@
  * State machine guards invalid transitions: capture can only start when the
  * camera is ready, only one capture runs at a time, etc.
  */
-import type { FrameId } from '../frames/types';
+import type { FrameId } from '@chewable/shared';
 
 export type BoothState =
 	| 'idle'

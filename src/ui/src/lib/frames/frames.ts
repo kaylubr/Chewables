@@ -5,7 +5,8 @@
  * definition (canvas size + photo slots + overlay image). Frame artwork is
  * created externally and dropped into static/frames/, then registered here.
  */
-import type { FrameDefinition, FrameId } from "./types";
+import type { FrameId } from "@chewable/shared";
+import type { FrameDefinition } from "./types";
 
 export const FRAMES: FrameDefinition[] = [
   {

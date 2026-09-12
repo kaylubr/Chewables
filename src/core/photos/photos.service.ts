@@ -1,16 +1,11 @@
 import { randomUUID } from "node:crypto";
-import type { SavedPhoto } from "@chewable/shared";
+import { PHOTO_CONTENT_TYPES, type SavedPhoto } from "@chewable/shared";
 import type { Photo } from "../db/index.js";
 import { storage, type Storage } from "../adapters/storage/storage.js";
 import { isSupportedFrame } from "../lib/frames.js";
 import type { CreatePhotoInput } from "../types/index.js";
 import * as PhotoRepo from "./photos.repo.js";
 
-export const ALLOWED_CONTENT_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 export class InvalidFrameError extends Error {
@@ -35,10 +30,10 @@ export function validateUpload(
 ): void {
   if (
     !contentType ||
-    !(ALLOWED_CONTENT_TYPES as readonly string[]).includes(contentType)
+    !(PHOTO_CONTENT_TYPES as readonly string[]).includes(contentType)
   ) {
     throw new InvalidImageError(
-      `unsupported content type ${contentType ?? ""}; expected one of ${ALLOWED_CONTENT_TYPES.join(", ")}`,
+      `unsupported content type ${contentType ?? ""}; expected one of ${PHOTO_CONTENT_TYPES.join(", ")}`,
     );
   }
   if (size <= 0) throw new InvalidImageError("empty upload");

@@ -8,11 +8,11 @@
  * Adding a frame = add the PNG to static/frames/ + add one entry to
  * src/lib/frames/frames.ts. No DB or backend change is required for a normal
  * frame.
+ *
+ * `FrameId` comes from `@chewable/shared`, so the ids the backend validates and
+ * the ids the frontend renders cannot drift apart.
  */
-
-/** Stable machine-readable frame identifier, shared with the backend. */
-export const FRAME_IDS = ['VINTAGE', 'POLAROID', 'FILM', 'CLASSIC'] as const;
-export type FrameId = (typeof FRAME_IDS)[number];
+import type { FrameId } from '@chewable/shared';
 
 /** Where one captured photograph sits on the final canvas. */
 export interface PhotoSlot {
