@@ -3,17 +3,17 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api/client';
-	import Modal from '$lib/components/Modal.svelte';
+	import GoogleSignInPrompt from '$lib/auth/GoogleSignInPrompt.svelte';
+	import { GoogleSignInFlow } from '$lib/auth/google-sign-in.svelte';
+	import { safeNext } from '$lib/auth/next';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { auth } from '$lib/auth/store.svelte';
-	import { startGoogleSignIn, type GoogleAuthController } from '$lib/auth/oauth';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 
 	let username = $state('');
 	let password = $state('');
 	let submitting = $state(false);
-	let googlePending = $state(false);
-	let googleFlow: GoogleAuthController | null = null;
+	const google = new GoogleSignInFlow();
 
 	onMount(() => {
 		const oauthError = page.url.searchParams.get('oauth_error');
@@ -22,22 +22,17 @@
 		}
 	});
 
-	function afterLogin() {
-		const next = page.url.searchParams.get('next');
-		goto(next && next.startsWith('/') ? next : '/profile');
+	function nextPath(): string {
+		return safeNext(page.url.searchParams.get('next'));
 	}
 
-	function nextParam(): string {
-		const next = page.url.searchParams.get('next');
-		return next && next.startsWith('/') ? next : '/profile';
+	function afterLogin() {
+		goto(nextPath());
 	}
 
 	async function continueWithGoogle() {
-		if (googlePending) return;
-		googlePending = true;
-		googleFlow = startGoogleSignIn(nextParam());
-		const outcome = await googleFlow.result;
-		googleFlow = null;
+		const outcome = await google.start(nextPath());
+		if (!outcome) return;
 		if (outcome.status === 'success') {
 			auth.setUser(outcome.user);
 			toastStore.success('Signed in.');
@@ -47,7 +42,6 @@
 			afterLogin();
 			return;
 		}
-		googlePending = false;
 		if (outcome.status === 'blocked') {
 			window.location.assign(outcome.url);
 			return;
@@ -55,10 +49,6 @@
 		if (outcome.status === 'error') {
 			toastStore.error(outcome.message);
 		}
-	}
-
-	function cancelGoogle() {
-		googleFlow?.cancel();
 	}
 
 	async function submit() {
@@ -85,7 +75,7 @@
 	<p class="sub">Sign in only to save photos to your gallery.</p>
 
 	<div class="social">
-		<button type="button" class="social-btn" onclick={continueWithGoogle} disabled={googlePending}>
+		<button type="button" class="social-btn" onclick={continueWithGoogle} disabled={google.pending}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
 				<!-- Icon from Material Icon Theme by Material Extensions - https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE -->
 				<g fill="none" fill-rule="evenodd" clip-rule="evenodd">
@@ -121,14 +111,8 @@
 	</p>
 </main>
 
-{#if googlePending}
-	<Modal onClose={cancelGoogle}>
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="googleAuthTitle">
-			<span class="spinner" aria-hidden="true"></span>
-			<p id="googleAuthTitle" class="modal-text">Connecting your Google account…</p>
-			<button type="button" class="modal-cancel" onclick={cancelGoogle}>Cancel</button>
-		</div>
-	</Modal>
+{#if google.pending}
+	<GoogleSignInPrompt onCancel={() => google.cancel()} />
 {/if}
 
 <style>
@@ -234,50 +218,6 @@
 		margin-top: 1.25rem;
 		font-size: var(--text-base);
 		color: var(--ink-soft);
-	}
-	.modal {
-		display: grid;
-		justify-items: center;
-		gap: 0.75rem;
-		padding: 1.75rem 2rem;
-		border: 1px solid var(--line-strong);
-		border-radius: 0.75rem;
-		background: var(--surface);
-		color: var(--ink);
-		text-align: center;
-		box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
-		font-family: var(--font-ui);
-	}
-	.spinner {
-		width: 2rem;
-		height: 2rem;
-		border: 3px solid var(--line);
-		border-top-color: var(--ember);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-	.modal-text {
-		margin: 0;
-		font-size: var(--text-base);
-		font-weight: 600;
-	}
-	.modal-cancel {
-		background: none;
-		border: none;
-		padding: 0.25rem 0.5rem;
-		color: var(--ink-soft);
-		font-family: inherit;
-		font-size: var(--text-sm);
-		cursor: pointer;
-		text-decoration: underline;
-	}
-	.modal-cancel:hover {
-		color: var(--ember);
 	}
 	@media (pointer: coarse) {
 		input {
