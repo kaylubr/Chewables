@@ -46,8 +46,14 @@
 	.error-page {
 		max-width: 40rem;
 		margin: 0 auto;
-		padding: 4rem 1.5rem;
+		/* Fills the space under the sticky header so the block centres in the
+		   viewport rather than sitting at the top. `safe` keeps the content
+		   reachable when it is taller than a short viewport. */
+		min-height: calc(100dvh - 6rem);
+		padding: 2rem 1.5rem;
 		display: grid;
+		place-content: center;
+		place-content: safe center;
 		justify-items: center;
 		gap: 0.5rem;
 		text-align: center;
