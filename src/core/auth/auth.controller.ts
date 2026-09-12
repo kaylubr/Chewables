@@ -1,5 +1,6 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { config } from '../config.js';
+import * as AuthRepo from './auth.repo.js';
 import {
 	changeEmailSchema,
 	changePasswordSchema,
@@ -9,32 +10,42 @@ import {
 	setPasswordSchema,
 } from './auth.schema.js';
 import {
-	applyAuthCookies,
 	changeEmail,
 	changePassword,
 	confirmEmailChange,
 	deleteAccount,
-	EmailTakenError,
+	getSessionUser,
+	loginWithUsername,
+	register,
+	resendVerificationForSession,
+	setPassword,
+} from './auth.service.js';
+import {
 	emailChangeCookieName,
 	emailChangeCookieOptions,
 	emailChangeCookieValue,
-	getSessionUser,
+} from './email-change-cookie.js';
+import {
+	EmailTakenError,
 	InvalidCurrentPasswordError,
-	loginWithUsername,
 	NoPasswordSetError,
 	PasswordAlreadySetError,
 	PasswordRequiredError,
-	register,
-	resendVerificationForSession,
 	SameEmailError,
-	setPassword,
 	StaleSessionError,
-	UsernameTakenError,
 	UsernameMismatchError,
-} from './auth.service.js';
-import * as AuthRepo from './auth.repo.js';
+	UsernameTakenError,
+} from './errors.js';
+import type { AuthResult } from '../types/index.js';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
+
+/** Hand Better Auth's Set-Cookie headers back to the browser. */
+function applyAuthCookies(res: Response, result: AuthResult): void {
+	if (result.setCookies.length > 0) {
+		res.setHeader('Set-Cookie', result.setCookies);
+	}
+}
 
 export const registerUser: RequestHandler = async (req, res, next) => {
 	const parsed = registerSchema.safeParse(req.body);

@@ -11,7 +11,7 @@ import {
 	resendVerificationEmail,
 	setPasswordHandler,
 } from './auth.controller.js';
-import { auth } from './auth.service.js';
+import { auth } from './better-auth.js';
 
 export const authRoutes = Router();
 

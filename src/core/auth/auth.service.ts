@@ -1,165 +1,31 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { betterAuth } from 'better-auth';
 import { config } from '../config.js';
-import { db, schema } from '../db/index.js';
-import { sendNewEmailVerification, sendVerificationEmail } from '../mail/mail.js';
 import { deleteStoredObjects, listUserStorageKeys } from '../photos/photos.service.js';
-import type {
-	AuthResult,
-	CreateUserInput,
-	SessionUser,
-} from '../types/index.js';
+import type { AuthResult, CreateUserInput, SessionUser } from '../types/index.js';
 import * as AuthRepo from './auth.repo.js';
-
-/**
- * Remembers which address an email change started from, in the browser that
- * requested it. Written when the change is initiated and read when it
- * completes, so "the change finished" can be proven from a signed server-issued
- * value rather than trusted from a query parameter.
- */
-const EMAIL_CHANGE_COOKIE = 'chewables.email_change';
-/** Matches Better Auth's `emailVerification.expiresIn` default (1 hour). */
-const EMAIL_CHANGE_TTL_MS = 60 * 60 * 1000;
-
-export const auth = betterAuth({
-	database: drizzleAdapter(db, {
-		provider: "pg",
-		schema: {
-			user: schema.users,
-			session: schema.session,
-			account: schema.account,
-			verification: schema.verification,
-		},
-	}),
-	secret: config.auth.secret,
-	baseURL: config.oauth.backendBaseUrl,
-	trustedOrigins: config.corsOrigin ? [config.corsOrigin] : [],
-	emailAndPassword: {
-		enabled: true,
-		requireEmailVerification: false,
-		autoSignIn: true,
-	},
-	emailVerification: {
-		sendVerificationEmail: async ({ user, url }) => {
-			const row = await AuthRepo.findById(user.id);
-			if (row && row.email !== user.email) {
-				await sendNewEmailVerification({ to: user.email, verifyUrl: url });
-				return;
-			}
-			await sendVerificationEmail({ to: user.email, verifyUrl: url });
-		},
-		sendOnSignUp: true,
-		autoSignInAfterVerification: true,
-		afterEmailVerification: async (user, request) => {
-			const from = readEmailChangeCookie(
-				request
-					? cookieFromHeader(request.headers.get('cookie') ?? undefined, EMAIL_CHANGE_COOKIE)
-					: undefined,
-			);
-			if (!from || from.toLowerCase() === user.email.toLowerCase()) return;
-			if (!request) return;
-			try {
-				await auth.api.revokeOtherSessions({ headers: request.headers });
-			} catch (error) {
-				console.error('[auth] could not revoke other sessions after email change', error);
-			}
-		},
-	},
-	user: {
-		changeEmail: {
-			enabled: true,
-		},
-		deleteUser: {
-			enabled: true,
-		},
-	},
-	account: {
-		accountLinking: {
-			enabled: true,
-			requireLocalEmailVerified: true,
-		},
-	},
-	socialProviders: {
-		google: {
-			clientId: config.auth.google.clientId,
-			clientSecret: config.auth.google.clientSecret,
-			redirectURI: `${config.oauth.backendBaseUrl}/api/auth/callback/google`,
-		},
-	},
-	session: {
-		expiresIn: config.auth.session.expiresIn,
-		cookieCache: {
-			enabled: true,
-			maxAge: config.auth.session.expiresIn,
-		},
-	},
-	cookies: {
-		session_token: {
-			name: config.auth.session.cookieName,
-			sameSite: config.auth.session.sameSite,
-			secure: config.auth.session.secure,
-		},
-	},
-	advanced: {
-		cookiePrefix: "chewables",
-		useCrossSubDomainCookies: false,
-	},
-});
-
-export class EmailTakenError extends Error {
-	override name = "EmailTakenError";
-}
-
-export class UsernameTakenError extends Error {
-	override name = "UsernameTakenError";
-}
-
-export class NotAuthenticatedError extends Error {
-	override name = "NotAuthenticatedError";
-}
-
-export class SameEmailError extends Error {
-	override name = "SameEmailError";
-}
-
-export class InvalidCurrentPasswordError extends Error {
-	override name = "InvalidCurrentPasswordError";
-}
-
-export class NoPasswordSetError extends Error {
-	override name = "NoPasswordSetError";
-}
-
-export class PasswordAlreadySetError extends Error {
-	override name = "PasswordAlreadySetError";
-}
-
-export class PasswordRequiredError extends Error {
-	override name = "PasswordRequiredError";
-}
-
-export class UsernameMismatchError extends Error {
-	override name = "UsernameMismatchError";
-}
-
-export class StaleSessionError extends Error {
-	override name = "StaleSessionError";
-}
-
-export function applyAuthCookies(
-	res: { setHeader(name: string, value: string[]): void } & object,
-	result: AuthResult,
-): void {
-	if (result.setCookies.length > 0) {
-		res.setHeader("Set-Cookie", result.setCookies);
-	}
-}
+import {
+	auth,
+	authErrorCode,
+	normalizeSignIn,
+	setCookiesFrom,
+	toFetchHeaders,
+} from './better-auth.js';
+import { readEmailChangeCookie } from './email-change-cookie.js';
+import {
+	EmailTakenError,
+	InvalidCurrentPasswordError,
+	NoPasswordSetError,
+	PasswordAlreadySetError,
+	PasswordRequiredError,
+	SameEmailError,
+	StaleSessionError,
+	UsernameMismatchError,
+	UsernameTakenError,
+} from './errors.js';
 
 /** Callback URL for the email-verification link: the SPA auth-popup page. */
 function verificationCallbackUrl(next?: string): string {
 	const base = config.oauth.redirectBase;
-	const target = next?.startsWith("/") ? next : "/profile";
+	const target = next?.startsWith('/') ? next : '/profile';
 	return `${base}/auth-popup.html?api=${encodeURIComponent(config.oauth.redirectBase)}&verify=1&next=${encodeURIComponent(target)}`;
 }
 
@@ -185,7 +51,7 @@ export async function register(input: CreateUserInput): Promise<AuthResult> {
 		},
 		returnHeaders: true,
 	});
-	const result = normalizeBetterAuth(raw);
+	const result = normalizeSignIn(raw);
 	await AuthRepo.setUsername(result.user.id, input.username);
 	return {
 		user: {
@@ -196,7 +62,7 @@ export async function register(input: CreateUserInput): Promise<AuthResult> {
 			image: result.user.image ?? null,
 			createdAt: toIso(result.user.createdAt),
 		},
-		setCookies: extractSetCookie(result.response?.headers),
+		setCookies: result.setCookies,
 	};
 }
 
@@ -214,23 +80,23 @@ export async function loginWithUsername(
 		});
 	} catch (error) {
 		const status = (error as { status?: string }).status;
-		if (status === "UNAUTHORIZED" || status === "INVALID_EMAIL_OR_PASSWORD") {
+		if (status === 'UNAUTHORIZED' || status === 'INVALID_EMAIL_OR_PASSWORD') {
 			return null;
 		}
 		throw error;
 	}
-	const result = normalizeBetterAuth(raw);
+	const result = normalizeSignIn(raw);
 	if (!result.token) return null;
 	return {
 		user: {
 			id: user.id,
 			email: user.email,
-			username: user.username ?? "",
+			username: user.username ?? '',
 			emailVerified: result.user.emailVerified,
 			image: result.user.image ?? null,
 			createdAt: toIso(user.createdAt),
 		},
-		setCookies: extractSetCookie(result.response?.headers),
+		setCookies: result.setCookies,
 	};
 }
 
@@ -249,7 +115,7 @@ export async function getSessionUser(
 	return {
 		id: session.user.id,
 		email: session.user.email,
-		username: session.user.name ?? "",
+		username: session.user.name ?? '',
 		emailVerified: session.user.emailVerified,
 		image: session.user.image ?? null,
 		createdAt: toIso(session.user.createdAt),
@@ -302,11 +168,11 @@ export async function changePassword(input: {
 			headers: toFetchHeaders(input.headers),
 			returnHeaders: true,
 		});
-		return cookiesFrom(raw);
+		return setCookiesFrom(raw);
 	} catch (error) {
 		const code = authErrorCode(error);
-		if (code === "INVALID_PASSWORD") throw new InvalidCurrentPasswordError();
-		if (code === "CREDENTIAL_ACCOUNT_NOT_FOUND") throw new NoPasswordSetError();
+		if (code === 'INVALID_PASSWORD') throw new InvalidCurrentPasswordError();
+		if (code === 'CREDENTIAL_ACCOUNT_NOT_FOUND') throw new NoPasswordSetError();
 		throw error;
 	}
 }
@@ -325,7 +191,7 @@ export async function setPassword(input: {
 			headers: toFetchHeaders(input.headers),
 		});
 	} catch (error) {
-		if (authErrorCode(error) === "PASSWORD_ALREADY_SET") {
+		if (authErrorCode(error) === 'PASSWORD_ALREADY_SET') {
 			throw new PasswordAlreadySetError();
 		}
 		throw error;
@@ -365,7 +231,7 @@ export async function confirmEmailChange(input: {
 	cookieHeader: string | undefined;
 	user: SessionUser;
 }): Promise<boolean> {
-	const from = readEmailChangeCookie(cookieFromHeader(input.cookieHeader, EMAIL_CHANGE_COOKIE));
+	const from = readEmailChangeCookie(input.cookieHeader);
 	if (!from || from.toLowerCase() === input.user.email.toLowerCase()) return false;
 	await auth.api.revokeOtherSessions({
 		headers: toFetchHeaders(input.headers),
@@ -404,13 +270,13 @@ export async function deleteAccount(input: {
 			headers: toFetchHeaders(input.headers),
 			returnHeaders: true,
 		});
-		setCookies = cookiesFrom(raw);
+		setCookies = setCookiesFrom(raw);
 	} catch (error) {
 		const code = authErrorCode(error);
-		if (code === "INVALID_PASSWORD") throw new InvalidCurrentPasswordError();
+		if (code === 'INVALID_PASSWORD') throw new InvalidCurrentPasswordError();
 		// Better Auth requires a fresh session when there is no password to
 		// re-enter (social-only accounts).
-		if (code === "SESSION_EXPIRED") throw new StaleSessionError();
+		if (code === 'SESSION_EXPIRED') throw new StaleSessionError();
 		throw error;
 	}
 
@@ -418,123 +284,6 @@ export async function deleteAccount(input: {
 	return setCookies;
 }
 
-export function emailChangeCookieName(): string {
-	return EMAIL_CHANGE_COOKIE;
-}
-
-export function emailChangeCookieValue(email: string): string {
-	const value = Buffer.from(email, 'utf8').toString('base64url');
-	const mac = createHmac('sha256', config.auth.secret).update(value).digest('base64url');
-	return `${value}.${mac}`;
-}
-
-export function emailChangeCookieOptions(): {
-	httpOnly: boolean;
-	sameSite: 'lax';
-	secure: boolean;
-	path: string;
-	maxAge: number;
-} {
-	return {
-		httpOnly: true,
-		sameSite: 'lax',
-		secure: config.auth.session.secure,
-		path: '/',
-		maxAge: EMAIL_CHANGE_TTL_MS,
-	};
-}
-
-/** Returns the signed address, or null when the value is absent or forged. */
-function readEmailChangeCookie(raw: string | undefined): string | null {
-	if (!raw) return null;
-	const separator = raw.lastIndexOf('.');
-	if (separator <= 0) return null;
-	const value = raw.slice(0, separator);
-	const mac = raw.slice(separator + 1);
-	const expected = createHmac('sha256', config.auth.secret).update(value).digest('base64url');
-	const given = Buffer.from(mac);
-	const wanted = Buffer.from(expected);
-	if (given.length !== wanted.length) return null;
-	if (!timingSafeEqual(given, wanted)) return null;
-	return Buffer.from(value, 'base64url').toString('utf8');
-}
-
-function cookieFromHeader(header: string | undefined, name: string): string | undefined {
-	if (!header) return undefined;
-	for (const part of header.split(';')) {
-		const separator = part.indexOf('=');
-		if (separator === -1) continue;
-		if (part.slice(0, separator).trim() !== name) continue;
-		return part.slice(separator + 1).trim();
-	}
-	return undefined;
-}
-
-interface BetterAuthResult {
-	token: string | null;
-	user: {
-		id: string;
-		email: string;
-		name: string;
-		emailVerified: boolean;
-		image: string | null;
-		createdAt: string | Date;
-	};
-	response?: { headers?: Headers | null };
-}
-
-function normalizeBetterAuth(raw: unknown): BetterAuthResult {
-	const r = (raw ?? {}) as Record<string, unknown>;
-	const inner = (r.response as Record<string, unknown> | undefined) ?? {};
-	const user = (r.user ?? inner.user) as BetterAuthResult["user"];
-	const token = (r.token ?? inner.token ?? null) as string | null;
-	const headers =
-		(r.headers as Headers | undefined) ??
-		(inner.headers as Headers | undefined);
-	return { token, user, response: { headers: headers ?? null } };
-}
-
-/** Set-Cookie headers from a Better Auth `{ returnHeaders: true }` result. */
-function cookiesFrom(raw: unknown): string[] {
-	const r = (raw ?? {}) as Record<string, unknown>;
-	const inner = (r.response as Record<string, unknown> | undefined) ?? {};
-	const headers =
-		(r.headers as Headers | undefined) ??
-		(inner.headers as Headers | undefined);
-	return extractSetCookie(headers ?? null);
-}
-
-/** Better Auth reports failures as an error carrying a machine-readable code. */
-function authErrorCode(error: unknown): string | null {
-	const body = (error as { body?: { code?: unknown } } | null | undefined)?.body;
-	return typeof body?.code === "string" ? body.code : null;
-}
-
 function toIso(value: string | Date): string {
-	return typeof value === "string" ? new Date(value).toISOString() : value.toISOString();
-}
-
-function toFetchHeaders(
-	headers: Record<string, string | string[] | undefined>,
-): Headers {
-	const h = new Headers();
-	for (const [key, value] of Object.entries(headers)) {
-		if (value === undefined) continue;
-		if (Array.isArray(value)) {
-			for (const v of value) h.append(key, v);
-		} else {
-			h.set(key, value);
-		}
-	}
-	return h;
-}
-
-function extractSetCookie(headers?: Headers | null): string[] {
-	if (!headers) return [];
-	if (typeof headers.getSetCookie === "function") {
-		return headers.getSetCookie();
-	}
-	const value = headers.get("set-cookie");
-	if (!value) return [];
-	return typeof value === "string" ? [value] : value;
+	return typeof value === 'string' ? new Date(value).toISOString() : value.toISOString();
 }

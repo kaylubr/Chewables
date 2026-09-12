@@ -6,11 +6,9 @@ import { app } from "../app.js";
 import { db, schema } from "../db/index.js";
 import { storage, StorageError } from "../adapters/storage/storage.js";
 import * as mail from "../mail/mail.js";
-import {
-	auth,
-	deleteAccount as deleteAccountService,
-	StaleSessionError,
-} from "./auth.service.js";
+import { auth } from "./better-auth.js";
+import { deleteAccount as deleteAccountService } from "./auth.service.js";
+import { StaleSessionError } from "./errors.js";
 
 const PNG_HEADER = Buffer.from([
 	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
