@@ -35,3 +35,4 @@ Shared vocabulary for the Chewables photobooth. Terms here mean exactly what thi
 - **Profile** — The identity page (`/profile`): avatar, username, email reveal. Does not show photos (ADR 0011).
 - **Gallery** — The saved-photo page (`/photos`): the user's own saved compositions with delete. The canonical photo surface; reached from the authenticated nav (ADR 0011).
 - **Settings** — The account page (`/settings`): currently the email-verification card. A thin account surface, not a photo surface (ADR 0011).
+- **Error page** — The root `+error.svelte`: shown for an unknown route and for anything a load or entry throws. Client-rendered, because production serves the SPA shell through Express (ADR 0010). It always shows the status; the underlying message is dev-only.
