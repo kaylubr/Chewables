@@ -19,28 +19,26 @@
 </svelte:head>
 
 <main class="error-page">
-	<div class="card">
-		<p class="status">{page.status}</p>
-		<h1>{notFound ? 'Page not found' : 'Something went wrong'}</h1>
-		<p class="body">
-			{notFound
-				? "That page doesn't exist. It may have moved, or the link may be wrong."
-				: "That's on us, not you. Try again in a moment."}
-		</p>
+	<p class="status">{page.status}</p>
+	<h1>{notFound ? 'Page not found' : 'Something went wrong'}</h1>
+	<p class="body">
+		{notFound
+			? "That page doesn't exist. It may have moved, or the link may be wrong."
+			: "That's on us, not you. Try again in a moment."}
+	</p>
 
-		{#if dev}
-			<p class="detail">{page.error?.message}</p>
+	{#if dev}
+		<p class="detail">{page.error?.message}</p>
+	{/if}
+
+	<div class="actions">
+		<a class="primary" href="/">Back to home</a>
+		<a class="secondary" href="/report">Report an issue</a>
+		{#if retryable}
+			<button type="button" class="secondary" onclick={() => location.reload()}>
+				Try again
+			</button>
 		{/if}
-
-		<div class="actions">
-			<a class="primary" href="/">Back to home</a>
-			<a class="secondary" href="/report">Report an issue</a>
-			{#if retryable}
-				<button type="button" class="secondary" onclick={() => location.reload()}>
-					Try again
-				</button>
-			{/if}
-		</div>
 	</div>
 </main>
 
@@ -49,19 +47,12 @@
 		max-width: 40rem;
 		margin: 0 auto;
 		padding: 4rem 1.5rem;
-		font-family: var(--font-ui);
-		color: var(--ink);
-	}
-
-	.card {
 		display: grid;
 		justify-items: center;
 		gap: 0.5rem;
-		padding: 3rem 1.5rem;
-		border: 1px dashed var(--line-strong);
-		border-radius: 0.75rem;
-		background: var(--surface);
 		text-align: center;
+		font-family: var(--font-ui);
+		color: var(--ink);
 	}
 
 	.status {
@@ -72,7 +63,7 @@
 		color: var(--ink-faint);
 	}
 
-	.card h1 {
+	.error-page h1 {
 		margin: 0;
 		font-size: var(--text-xl);
 	}
