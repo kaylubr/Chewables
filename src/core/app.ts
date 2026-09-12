@@ -23,6 +23,13 @@ if (config.corsOrigin) {
 app.use("/api/auth", authRoutes);
 app.use("/api/photos", photoRoutes);
 
+// Unknown API routes answer JSON, never the SPA shell. This must stay above the
+// production static/catch-all below: that catch-all matches any GET, so without
+// this an unknown `GET /api/...` would be served index.html with a 200.
+app.use("/api", (_req, res) => {
+	res.status(404).json({ detail: "Not found" });
+});
+
 if (config.isProd) {
   const staticDir = path.resolve(process.cwd(), "../ui/build");
   app.use(express.static(staticDir));
