@@ -202,8 +202,6 @@
 		max-width: 38rem;
 		margin: 0;
 	}
-	/* Off-center the hero on wide screens: the marquee and copy hold the left
-	   edge instead of stacking down the middle. */
 	@media (min-width: 900px) {
 		.hero-inner {
 			justify-items: start;
@@ -291,8 +289,6 @@
 		color: var(--charcoal);
 		text-align: left;
 	}
-	/* How-it-works becomes an editorial pair: the heading holds the left rail,
-	   the steps run down the right with hairline separators. */
 	.process-inner {
 		max-width: 72rem;
 		margin: 0 auto;

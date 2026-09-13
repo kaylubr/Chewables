@@ -1,11 +1,3 @@
-/**
- * Backend API client for the SvelteKit frontend.
- *
- * Auth is cookie-session based (Better-Auth): the browser sends the session
- * cookie on every request via `credentials: 'include'`, and the current user
- * is read from GET /api/auth/me. Config/contract types come from the shared
- * `@chewable/shared` package so backend and frontend stay in sync.
- */
 import { PUBLIC_API_BASE } from "$env/static/public";
 import type { AuthUser, SavedPhoto } from "@chewable/shared";
 
@@ -37,7 +29,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 			const body = await res.json();
 			if (typeof body.detail === "string") detail = body.detail;
 		} catch {
-			/* keep statusText */
 		}
 		throw new ApiError(res.status, detail);
 	}
@@ -46,7 +37,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-	/** Current user from the session cookie, or null when not authenticated. */
 	me: async (): Promise<AuthUser | null> => {
 		try {
 			return await request<AuthUser>("/api/auth/me");
@@ -56,16 +46,12 @@ export const api = {
 		}
 	},
 	register: (email: string, username: string, password: string) => {
-		// Our register route creates the user with the username handle (ADR
-		// 0005) and starts a session via Better-Auth.
 		return request<AuthUser>("/api/auth/register", {
 			method: "POST",
 			body: JSON.stringify({ email, username, password }),
 		});
 	},
 	login: (usernameOrEmail: string, password: string) => {
-		// Sign in by username handle (ADR 0005); the backend resolves the
-		// username to its account email before delegating to Better-Auth.
 		return request<AuthUser>("/api/auth/login", {
 			method: "POST",
 			body: JSON.stringify({ username: usernameOrEmail, password }),
@@ -75,9 +61,6 @@ export const api = {
 		return request<void>("/api/auth/sign-out", { method: "POST" });
 	},
 	sendVerificationEmail: (email: string, next = "/profile") => {
-		// Ask Better-Auth to (re)send the verification email for an existing
-		// unverified account. The callbackURL points at the SPA auth-popup page
-		// so verification lands the user back in the app after clicking the link.
 		const callbackURL = `${location.origin}/auth-popup.html?api=${encodeURIComponent(PUBLIC_API_BASE)}&verify=1&next=${encodeURIComponent(next)}`;
 		return request<{ status: boolean }>("/api/auth/send-verification-email", {
 			method: "POST",

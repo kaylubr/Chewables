@@ -78,7 +78,6 @@ describe('PhotoCollection.load', () => {
 		expect(collection.failureMessage).toBe('Not authenticated');
 		expect(collection.photos).toEqual([]);
 		expect(collection.loading).toBe(false);
-		// A failed load is not the "no photos yet" empty state.
 		expect(collection.isEmpty).toBe(false);
 	});
 

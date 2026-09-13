@@ -6,13 +6,6 @@ import { sendNewEmailVerification, sendVerificationEmail } from '../mail/mail.js
 import * as AuthRepo from './auth.repo.js';
 import { readEmailChangeCookie } from './email-change-cookie.js';
 
-/**
- * The Better-Auth adapter.
- *
- * Holds the engine's configuration plus the helpers that turn its return
- * shapes and error codes into this app's own types, so the account operations
- * in `auth.service.ts` deal only in domain concepts.
- */
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: 'pg',
@@ -94,7 +87,6 @@ export const auth = betterAuth({
 	},
 });
 
-/** The user shape Better-Auth returns, before it becomes a `SessionUser`. */
 export interface BetterAuthUser {
 	id: string;
 	email: string;
@@ -110,10 +102,6 @@ export interface BetterAuthSignIn {
 	setCookies: string[];
 }
 
-/**
- * Normalize a `{ returnHeaders: true }` sign-up/sign-in result into the user,
- * the session token, and the cookies to hand back to the browser.
- */
 export function normalizeSignIn(raw: unknown): BetterAuthSignIn {
 	const outer = (raw ?? {}) as Record<string, unknown>;
 	const inner = (outer.response as Record<string, unknown> | undefined) ?? {};
@@ -122,14 +110,12 @@ export function normalizeSignIn(raw: unknown): BetterAuthSignIn {
 	return { token, user, setCookies: extractSetCookie(headersOf(outer, inner)) };
 }
 
-/** Set-Cookie headers from any `{ returnHeaders: true }` result. */
 export function setCookiesFrom(raw: unknown): string[] {
 	const outer = (raw ?? {}) as Record<string, unknown>;
 	const inner = (outer.response as Record<string, unknown> | undefined) ?? {};
 	return extractSetCookie(headersOf(outer, inner));
 }
 
-/** Better Auth reports failures as an error carrying a machine-readable code. */
 export function authErrorCode(error: unknown): string | null {
 	const body = (error as { body?: { code?: unknown } } | null | undefined)?.body;
 	return typeof body?.code === 'string' ? body.code : null;

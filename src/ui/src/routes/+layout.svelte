@@ -164,16 +164,11 @@
 
 <style>
 	:global(:focus-visible) {
-		/* Two-tone ring: the charcoal outline reads on light surfaces, the
-		   mustard halo reads on the crimson bar. One of the two always clears
-		   3:1, so focus is visible wherever it lands. */
 		outline: 2px solid var(--focus-ring);
 		outline-offset: 2px;
 		box-shadow: 0 0 0 4px var(--focus-halo);
 	}
 	:global(html) {
-		/* #a51212 keeps mustard-on-crimson at 4.74:1 (AA for body text) while
-		   staying the same crimson lane; the old #c31b1b measured 3.66:1. */
 		--crimson: #a51212;
 		--crimson-deep: #8f1010;
 		--mustard: #f5c400;

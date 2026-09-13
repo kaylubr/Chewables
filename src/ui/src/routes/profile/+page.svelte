@@ -11,21 +11,12 @@ import { toastStore } from "$lib/toasts/toasts.svelte";
 import type { AuthUser } from "@chewable/shared";
 import { onMount } from "svelte";
 
-// The profile is a teaser for /photos, not a second copy of the gallery: it
-// signs URLs for the newest few only. Eight also fills two clean rows at the
-// widest breakpoint (4 across).
 const RECENT_LIMIT = 8;
 
-// Snapshot of the authenticated user for the template, so Svelte can narrow
-// it inside the `{:else}` branch after the auth gate.
 let user = $state<AuthUser | null>(null);
-// Holds the newest few only, so this stays a teaser of the gallery at /photos
-// rather than a second copy of it.
 const collection = new PhotoCollection();
-// Index into `collection.viewable`, or null while the viewer is closed.
 let lightboxIndex = $state<number | null>(null);
 
-// Resending verification confirms first, matching the same action in Settings.
 let verifyPending = $state(false);
 let verifying = $state(false);
 
@@ -69,8 +60,6 @@ onMount(async () => {
 		return;
 	}
 	user = loaded;
-	// The profile is a secondary surface, so a load failure stays an inline
-	// fallback rather than a toast.
 	await collection.load(RECENT_LIMIT);
 });
 </script>
@@ -95,8 +84,6 @@ onMount(async () => {
 				<h1 class="username">{user.username}</h1>
 				<p class="email">{user.email}</p>
 				{#if !user.emailVerified}
-					<!-- A quiet status line with a real action beside it: the
-					     mutation itself goes through the confirm dialog below. -->
 					<p class="verify">
 						<span>Email not verified</span>
 						<button
@@ -226,8 +213,6 @@ onMount(async () => {
 		overflow-wrap: anywhere;
 	}
 
-	/* A quiet status line with a real action beside it, rather than a loud
-	   badge that reads as decoration. */
 	.verify {
 		display: flex;
 		align-items: baseline;
@@ -334,7 +319,6 @@ onMount(async () => {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.75rem;
-		/* Keeps each tile at its own ratio instead of stretching it to the row. */
 		align-items: start;
 	}
 
@@ -399,7 +383,6 @@ onMount(async () => {
 		.grid {
 			grid-template-columns: repeat(3, 1fr);
 		}
-		/* Inline-end on wider screens; left-aligned when it wraps below. */
 		.manage {
 			margin-left: auto;
 		}

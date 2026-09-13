@@ -15,7 +15,6 @@ function pngBytes(): Buffer {
   return Buffer.concat([PNG_HEADER, Buffer.alloc(64, 0x30)]);
 }
 
-/** A store whose every operation fails, standing in for a storage outage. */
 function failingStorage(): Storage {
   return {
     async ensureBucket(): Promise<void> {},
@@ -63,11 +62,6 @@ function upload(agent: request.Agent) {
     });
 }
 
-/**
- * The save/delete ordering behind ADR 0006, driven through the photos module
- * with an in-memory adapter. These exercise the real rollback code; the API
- * tests below only cover how the controller reports a storage outage.
- */
 describe("photo ordering under storage failures", () => {
   it("a failed upload leaves no photo record", async () => {
     const userId = await registerUser("create-fail@example.com", "createfail");
@@ -123,18 +117,11 @@ describe("photo ordering under storage failures", () => {
       deletePhoto({ userId, photoId: created.id, store: failingStorage() }),
     ).rejects.toBeInstanceOf(StorageError);
 
-    // Row first, then object (ADR 0006): the row is gone, so the gallery never
-    // points at a missing file, and the orphaned object is unreachable.
     expect(await db.select().from(schema.photos)).toHaveLength(0);
     expect(store.has(created.storageKey)).toBe(true);
   });
 });
 
-/**
- * The same outages through HTTP, which is what the controller's 503 mapping
- * is for. The route path reaches the production adapter, so spying on it
- * exercises the real handler rather than a stubbed-out service call.
- */
 describe("storage outages through the API", () => {
   it("answers 503 and records nothing when the upload cannot be stored", async () => {
     const agent = await registerAgent();
@@ -163,7 +150,6 @@ describe("storage outages through the API", () => {
     deleteStub.mockRestore();
 
     expect(resp.status).toBe(503);
-    // Row-first delete: the photo is already unreachable from the gallery.
     expect(await db.select().from(schema.photos)).toHaveLength(0);
   });
 });

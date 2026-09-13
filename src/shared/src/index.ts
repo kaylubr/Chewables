@@ -4,9 +4,7 @@ export interface AuthUser {
 	username: string;
 	emailVerified: boolean;
 	image: string | null;
-	/** ISO timestamp of when the account was created. */
 	createdAt: string;
-	/** False for accounts created through a social provider that never set one. */
 	hasPassword: boolean;
 }
 

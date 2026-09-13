@@ -2,14 +2,6 @@
 	import { dev } from '$app/environment';
 	import { page } from '$app/state';
 
-	/**
-	 * Error page for an unknown route, or for anything a load or entry throws.
-	 *
-	 * There is no SSR — production serves the SPA shell through Express (ADR
-	 * 0010) — so this always renders on the client. The status is shown either
-	 * way; the underlying message is dev-only, and SvelteKit already
-	 * genericises 5xx messages in production.
-	 */
 	const notFound = $derived(page.status === 404);
 	const retryable = $derived(page.status >= 500);
 </script>
@@ -44,16 +36,9 @@
 
 <style>
 	.error-page {
-		/* Without border-box the padding below sits on top of min-height, which
-		   pushed the page past the viewport and produced a scrollbar. */
 		box-sizing: border-box;
 		max-width: 40rem;
 		margin: 0 auto;
-		/* Fills the space under the sticky header so the block centres in the
-		   viewport rather than sitting at the top. The allowance covers the
-		   header (brand clamp + padding, ~6.75rem at its tallest), so the page
-		   never exceeds the viewport. `safe` keeps the content reachable when it
-		   is taller than a short viewport. */
 		min-height: calc(100dvh - 7rem);
 		padding: 1.5rem;
 		display: grid;

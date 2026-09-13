@@ -40,7 +40,6 @@ import type { AuthResult } from '../types/index.js';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
 
-/** Hand Better Auth's Set-Cookie headers back to the browser. */
 function applyAuthCookies(res: Response, result: AuthResult): void {
 	if (result.setCookies.length > 0) {
 		res.setHeader('Set-Cookie', result.setCookies);
@@ -79,7 +78,6 @@ export const loginUser: RequestHandler = async (req, res, next) => {
 			return res.status(401).json({ detail: 'Incorrect username or password' });
 		}
 		applyAuthCookies(res, result);
-		// Signing in with a password implies a credential account exists.
 		return res.status(200).json({
 			token_type: 'bearer',
 			access_token: null,
@@ -95,8 +93,6 @@ export const getMe: RequestHandler = async (req, res) => {
 	if (!user) {
 		return res.status(401).json({ detail: 'Not authenticated' });
 	}
-	// Computed here rather than in getSessionUser: that helper backs every
-	// authenticated request, and this only needs answering for the account page.
 	return res.json({ ...user, hasPassword: await AuthRepo.hasPasswordAccount(user.id) });
 };
 
@@ -104,9 +100,6 @@ export const resendVerificationEmail: RequestHandler = async (req, res, next) =>
 	try {
 		const sent = await resendVerificationForSession(req.headers);
 		if (!sent) {
-			// No session — fall through to Better Auth's built-in endpoint,
-			// which handles the unauthenticated case (and hides registration /
-			// email enumeration via a timing floor) for a plain email request.
 			return next();
 		}
 		return res.status(200).json({ status: true });
@@ -115,7 +108,6 @@ export const resendVerificationEmail: RequestHandler = async (req, res, next) =>
 	}
 };
 
-/** The authenticated session user, or null after replying 401. */
 async function requireSession(req: Request, res: Response) {
 	const user = await getSessionUser(req.headers);
 	if (!user) {
@@ -138,7 +130,6 @@ export const changePasswordHandler: RequestHandler = async (req, res, next) => {
 			currentPassword: parsed.data.currentPassword,
 			newPassword: parsed.data.newPassword,
 		});
-		// Revoking other sessions reissues this browser's session cookie.
 		if (setCookies.length > 0) res.setHeader('Set-Cookie', setCookies);
 		return res.status(200).json({ status: true });
 	} catch (error) {
@@ -186,14 +177,11 @@ export const changeEmailHandler: RequestHandler = async (req, res, next) => {
 			headers: req.headers,
 			newEmail: parsed.data.newEmail,
 		});
-		// Remember where this change started so completion can be proven later.
 		res.cookie(
 			emailChangeCookieName(),
 			emailChangeCookieValue(user.email),
 			emailChangeCookieOptions(),
 		);
-		// Better Auth answers success even when the address is taken, so the
-		// response never claims the email actually changed.
 		return res.status(200).json({ status: true });
 	} catch (error) {
 		if (error instanceof SameEmailError) {
@@ -236,8 +224,6 @@ export const deleteAccountHandler: RequestHandler = async (req, res, next) => {
 		if (setCookies.length > 0) {
 			res.setHeader('Set-Cookie', setCookies);
 		} else {
-			// Better Auth clears its own session cookie when it can; make sure
-			// the browser is signed out either way.
 			res.clearCookie(config.auth.session.cookieName, { path: '/' });
 		}
 		return res.status(200).json({ status: true });

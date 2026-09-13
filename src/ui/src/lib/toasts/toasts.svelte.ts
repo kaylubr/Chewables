@@ -1,10 +1,3 @@
-/**
- * Client-side toast notifications.
- *
- * Module-scoped runes store so toasts survive SvelteKit client-side navigation
- * (pages push a toast right before goto()). Rendered by <ToastRegion /> in the
- * root layout. Lives only in the browser.
- */
 export type ToastKind = 'success' | 'error';
 
 export interface Toast {
@@ -24,7 +17,6 @@ class ToastsStore {
 	toasts = $state<Toast[]>([]);
 	#nextId = 1;
 
-	/** Push a toast; when the stack is full the oldest one is dropped. */
 	push(kind: ToastKind, message: string): number {
 		const id = this.#nextId++;
 		this.toasts = [...this.toasts, { id, kind, message }];

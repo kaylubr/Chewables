@@ -7,6 +7,7 @@ A privacy-conscious photobooth web app. Guests use the full experience (frame se
 ## Code Style Guidelines
 
 - One purpose per file, no giant utility or catch-all modules.
+- **No comments in code.** Do not write line comments, block comments, or JSDoc. Let names, types, and small functions carry the intent. The only exceptions are tooling directives that change behavior (`// @vitest-environment`, `<!-- svelte-ignore ... -->`, generated migration markers) and third-party license attribution notices shipped with vendored icon artwork.
 - **Domain-oriented modular monolith.** Organize around business domains, not technical layers. Each top-level domain folder (`src/core/auth/`, `src/core/photos/`) owns its routes, controllers, services, validation, queries/repositories, and tests. Cross-cutting concerns (config, error handling, auth middleware, logging, db client, shared types, test harness) live outside the domains.
 - `app.ts` is wiring only (app creation, middleware, route mounting, error handlers) — never endpoint logic. `index.ts` only starts the listener.
 - HTTP concerns stay in controllers; business rules live in services; database access stays behind a query/repository boundary (repo files). Domains communicate through their public services/interfaces — never reach into another domain's internals.

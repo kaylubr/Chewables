@@ -36,11 +36,6 @@ export async function findByUsernameOrEmail(identifier: string): Promise<UserRow
 	return rows[0] ? toUserRow(rows[0]) : null;
 }
 
-/**
- * Whether the user has a password credential. Accounts created through a
- * social provider start without one, which decides whether Settings offers
- * "change password" or "set a password".
- */
 export async function hasPasswordAccount(userId: string): Promise<boolean> {
 	const rows = await db
 		.select({ password: schema.account.password })

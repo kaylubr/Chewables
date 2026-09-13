@@ -22,14 +22,12 @@ import {
 	UsernameTakenError,
 } from './errors.js';
 
-/** Callback URL for the email-verification link: the SPA auth-popup page. */
 function verificationCallbackUrl(next?: string): string {
 	const base = config.oauth.redirectBase;
 	const target = next?.startsWith('/') ? next : '/profile';
 	return `${base}/auth-popup.html?api=${encodeURIComponent(config.oauth.redirectBase)}&verify=1&next=${encodeURIComponent(target)}`;
 }
 
-/** Where the email-change confirmation link lands: Settings, not the popup. */
 function emailChangeCallbackUrl(): string {
 	return `${config.oauth.redirectBase}/settings?email_changed=1`;
 }
@@ -105,10 +103,6 @@ export async function getSessionUser(
 ): Promise<SessionUser | null> {
 	const session = await auth.api.getSession({
 		headers: toFetchHeaders(headers),
-		// Always resolve from the database. The session cookie cache is signed
-		// but not consulted against session rows, so a cached session keeps
-		// working after it is revoked — which would silently defeat "revoke
-		// other sessions" on a password or email change.
 		query: { disableCookieCache: true },
 	});
 	if (!session) return null;
@@ -122,15 +116,6 @@ export async function getSessionUser(
 	};
 }
 
-/**
- * Re-send the verification email for the current session's own address, used
- * by the "resend verification email" button.
- *
- * The underlying Better Auth endpoint refuses the request with 400
- * EMAIL_MISMATCH when the requested email differs from the session email. We
- * bypass that check by asking for the session user's email directly no matter
- * what the client sent, so a stale client-side email can't produce a 400.
- */
 export async function resendVerificationForSession(
 	headers: Record<string, string | string[] | undefined>,
 ): Promise<boolean> {
@@ -146,13 +131,6 @@ export async function resendVerificationForSession(
 	return true;
 }
 
-/**
- * Change the password of an account that already has one.
- *
- * Returns any Set-Cookie headers Better Auth produced: revoking other sessions
- * hands this browser a fresh session cookie, and dropping it would sign the
- * user out of the change they just made.
- */
 export async function changePassword(input: {
 	headers: Record<string, string | string[] | undefined>;
 	currentPassword: string;
@@ -177,10 +155,6 @@ export async function changePassword(input: {
 	}
 }
 
-/**
- * Set a password for an account that has none (a social sign-up). Better Auth
- * exposes this server-side only, so the client never calls it directly.
- */
 export async function setPassword(input: {
 	headers: Record<string, string | string[] | undefined>;
 	newPassword: string;
@@ -198,11 +172,6 @@ export async function setPassword(input: {
 	}
 }
 
-/**
- * Start an email change. The address only moves once the link sent to the new
- * inbox is followed; Better Auth answers with `status: true` even when the
- * address is already taken, so callers must never report "email changed".
- */
 export async function changeEmail(input: {
 	user: SessionUser;
 	headers: Record<string, string | string[] | undefined>;
@@ -219,13 +188,6 @@ export async function changeEmail(input: {
 	});
 }
 
-/**
- * Complete an email change on the landing page.
- *
- * Returns true only when this browser started a change (signed cookie present)
- * and the session's address has since moved past it — i.e. the change actually
- * completed. A bare `?email_changed=1` visit changes nothing.
- */
 export async function confirmEmailChange(input: {
 	headers: Record<string, string | string[] | undefined>;
 	cookieHeader: string | undefined;
@@ -239,15 +201,6 @@ export async function confirmEmailChange(input: {
 	return true;
 }
 
-/**
- * Delete the account and everything it owns.
- *
- * Ordering follows ADR 0006 — the row first, then the objects. The photo keys
- * are read while the rows still exist, because deleting the user cascades the
- * photo rows (and therefore the keys) away. Object deletion afterwards is
- * best-effort: the account is already gone, so a failure can only leave an
- * unreachable orphan.
- */
 export async function deleteAccount(input: {
 	user: SessionUser;
 	headers: Record<string, string | string[] | undefined>;
@@ -274,8 +227,6 @@ export async function deleteAccount(input: {
 	} catch (error) {
 		const code = authErrorCode(error);
 		if (code === 'INVALID_PASSWORD') throw new InvalidCurrentPasswordError();
-		// Better Auth requires a fresh session when there is no password to
-		// re-enter (social-only accounts).
 		if (code === 'SESSION_EXPIRED') throw new StaleSessionError();
 		throw error;
 	}

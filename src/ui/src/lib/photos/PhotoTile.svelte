@@ -2,11 +2,6 @@
 	import { frameAspectRatio } from '$lib/frames/frames';
 	import type { DisplayPhoto } from './collection.svelte';
 
-	/**
-	 * One saved-photo tile: the composed image at its own ratio, a frame chip,
-	 * and an optional delete action. Shared by the gallery and the profile
-	 * strip so both surfaces read the same.
-	 */
 	let {
 		photo,
 		label,
@@ -16,12 +11,10 @@
 		zoom = false,
 	}: {
 		photo: DisplayPhoto;
-		/** Date text for the tile's accessible labels. */
 		label: string;
 		onOpen: () => void;
 		onDelete?: () => void;
 		deleting?: boolean;
-		/** Scale the image on hover; the profile strip opts in. */
 		zoom?: boolean;
 	} = $props();
 </script>
@@ -100,7 +93,6 @@
 		font-size: var(--text-sm);
 	}
 
-	/* Sits above the button; pointer-events keeps it from eating the click. */
 	.frame-label {
 		position: absolute;
 		left: 0.45rem;

@@ -33,11 +33,9 @@ describe('capture controller', () => {
 		const { controller, shots, states } = makeController(2);
 		controller.start();
 		expect(states[0]).toBe('countdown');
-		// 5s countdown then first capture
 		await vi.advanceTimersByTimeAsync(COUNTDOWN_SECONDS * 1000);
 		expect(shots).toHaveLength(1);
 		expect(states).toContain('capturing');
-		// second countdown then second capture -> composing
 		await vi.advanceTimersByTimeAsync(COUNTDOWN_SECONDS * 1000);
 		expect(shots).toHaveLength(2);
 		expect(controller.done).toBe(true);

@@ -31,7 +31,6 @@ function dataUrlToBlob(url: string): Blob {
 
 function save() {
 	if (!auth.isAuthenticated) {
-		// Saving requires an account; warn that leaving loses the in-memory result.
 		showSignInPrompt = true;
 		return;
 	}

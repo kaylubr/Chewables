@@ -23,10 +23,6 @@ function backdrop(): HTMLElement {
 	return document.querySelector('[role="dialog"]') as HTMLElement;
 }
 
-/**
- * The viewer is a three-panel track, so the visible photo is identified by the
- * live-region position rather than by looking for a "current" image.
- */
 function position(text: string) {
 	return screen.getByText(text);
 }
@@ -82,8 +78,6 @@ describe("Lightbox", () => {
 		await fireEvent.click(
 			screen.getByRole("button", { name: "Close photo viewer" }),
 		);
-		// The button calls onClose itself; the backdrop handler must not add a
-		// second call for the same click.
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
 
@@ -132,8 +126,6 @@ describe("Lightbox", () => {
 		expect(position("Photo 1 of 1")).toBeTruthy();
 	});
 
-	// With two photos the previous and next panels hold the same photo, which
-	// the positional panel keys have to tolerate.
 	it("navigates a two-photo set", async () => {
 		setup({ photos: [photos[0], photos[1]] });
 		expect(screen.getAllByAltText("Saved photobooth result")).toHaveLength(3);
@@ -142,7 +134,6 @@ describe("Lightbox", () => {
 		await waitFor(() => expect(position("Photo 2 of 2")).toBeTruthy());
 	});
 
-	// jsdom reports a 1024px viewport, so the commit threshold is 256px.
 	async function drag(fromX: number, toX: number, fromY = 100, toY = 100) {
 		const target = backdrop();
 		const init = { pointerId: 1, pointerType: "touch" };
@@ -192,8 +183,6 @@ describe("Lightbox", () => {
 
 	it("shows a placeholder when an image fails to load", async () => {
 		setup({ photos: [photos[0]] });
-		// A one-photo set fills all three panels with the same image, so every
-		// panel for that url falls back together.
 		await fireEvent.error(screen.getAllByAltText("Saved photobooth result")[0]);
 		expect(screen.getAllByText("unavailable").length).toBeGreaterThan(0);
 	});

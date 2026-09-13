@@ -1,13 +1,5 @@
 import { startGoogleSignIn, type GoogleAuthController, type GoogleAuthResult } from './oauth';
 
-/**
- * The pending state behind one Google sign-in attempt, shared by the login and
- * register pages.
- *
- * `start` must be reached synchronously from the click handler so the browser
- * does not block the popup. It keeps `pending` true on success, because the
- * caller is about to navigate away from under the prompt.
- */
 export class GoogleSignInFlow {
 	pending = $state(false);
 	#flow: GoogleAuthController | null = null;

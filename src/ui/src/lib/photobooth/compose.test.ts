@@ -6,20 +6,18 @@ import type { PhotoSlot } from '../frames/types';
 describe('coverSourceRect', () => {
 	it('center-crops a wide photo into a tall slot', () => {
 		const rect = coverSourceRect(1600, 900, { width: 400, height: 600 });
-		// scale = max(400/1600, 600/900) = max(0.25, 0.667) = 0.667
 		expect(rect.sh).toBeCloseTo(900);
 		expect(rect.sw).toBeCloseTo(600);
-		expect(rect.sx).toBeCloseTo(500); // (1600-600)/2
+		expect(rect.sx).toBeCloseTo(500);
 		expect(rect.sy).toBeCloseTo(0);
 	});
 
 	it('center-crops a tall photo into a wide slot', () => {
 		const rect = coverSourceRect(900, 1600, { width: 600, height: 400 });
-		// scale = max(600/900, 400/1600) = max(0.667, 0.25) = 0.667
 		expect(rect.sw).toBeCloseTo(900);
 		expect(rect.sh).toBeCloseTo(600);
 		expect(rect.sx).toBeCloseTo(0);
-		expect(rect.sy).toBeCloseTo(500); // (1600-600)/2
+		expect(rect.sy).toBeCloseTo(500);
 	});
 
 	it('leaves an exact-ratio photo uncropped', () => {
@@ -82,14 +80,11 @@ describe('composePhoto', () => {
 
 		expect(dataUrl).toBe('data:image/webp;base64,composed');
 		const draws = calls.filter((c) => c.op === 'drawImage');
-		// 4 photos + 1 overlay
 		expect(draws).toHaveLength(5);
 
-		// Canvas dimensions come from the frame definition.
 		expect(canvas.width).toBe(564);
 		expect(canvas.height).toBe(1365);
 
-		// Last draw is the overlay image.
 		const last = draws[draws.length - 1].args;
 		expect(last[0]).toBe(images['/frames/classic.png']);
 	});
@@ -118,7 +113,6 @@ describe('composePhoto', () => {
 		);
 
 		const firstPhotoDraw = calls.find((c) => c.op === 'drawImage')!.args;
-		// drawImage(photo, sx, sy, sw, sh, dx, dy, dw, dh)
 		expect(firstPhotoDraw[5]).toBe(slot.x);
 		expect(firstPhotoDraw[6]).toBe(slot.y);
 		expect(firstPhotoDraw[7]).toBe(slot.width);

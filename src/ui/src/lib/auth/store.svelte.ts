@@ -1,10 +1,3 @@
-/**
- * Client-side auth state.
- *
- * Auth is cookie-session based (Better-Auth): the browser holds the session
- * cookie; the app reads the current user from GET /api/auth/me. No token is
- * stored in localStorage; logout clears the session via the API.
- */
 import type { AuthUser } from "@chewable/shared";
 import { api } from "../api/client";
 

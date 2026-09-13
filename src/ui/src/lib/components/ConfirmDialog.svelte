@@ -2,14 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import Modal from './Modal.svelte';
 
-	/**
-	 * Confirmation dialog for an action that changes something.
-	 *
-	 * Focuses the cancel button when it opens (the least destructive choice)
-	 * and closes on Escape; <Modal> owns the backdrop and returns focus to
-	 * whatever was focused before it opened. Callers mark the page behind it
-	 * `inert` so the dialog is the only thing reachable.
-	 */
 	let {
 		open,
 		title,
@@ -36,8 +28,6 @@
 		children?: Snippet;
 	} = $props();
 
-	// Several dialogs can be mounted at once (each closed), so the label id has
-	// to be unique per instance rather than a fixed string.
 	const titleId = `confirm-title-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 

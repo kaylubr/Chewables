@@ -11,8 +11,6 @@ describe('frame configuration', () => {
 
 	it('resolves a configured frame by id and rejects unknown ids', () => {
 		expect(getFrame('FILM')).toBeDefined();
-		// 'VINTAGE' is part of the canonical vocabulary but has no artwork
-		// registered yet, so it must not resolve to a usable definition.
 		expect(getFrame('VINTAGE')).toBeUndefined();
 	});
 
@@ -37,13 +35,10 @@ describe('frame configuration', () => {
 	});
 
 	it('derives the display ratio from the frame canvas', () => {
-		// Matches the composed canvas, so the tile shows the whole strip
-		// instead of cover-cropping it to a square.
 		expect(frameAspectRatio('FILM')).toBe('564 / 1365');
 	});
 
 	it('has no ratio for an id without a registered definition', () => {
-		// The gallery falls back to the image's own ratio in that case.
 		expect(frameAspectRatio('VINTAGE')).toBeUndefined();
 		expect(frameAspectRatio('not-a-frame')).toBeUndefined();
 	});
@@ -89,7 +84,6 @@ describe('photobooth state machine', () => {
 		s = transition(s, 'camera-ready');
 		s = transition(s, 'countdown');
 		s = transition(s, 'capturing');
-		// Duplicate capture is not a valid transition while capturing.
 		expect(() => transition(s, 'capturing')).toThrow(/transition/i);
 	});
 

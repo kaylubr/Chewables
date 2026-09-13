@@ -2,16 +2,6 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 
-	/**
-	 * Modal shell: the backdrop, Escape dismissal, and the focus contract.
-	 *
-	 * Callers mount it only while their dialog is open, so it can capture the
-	 * element that had focus on mount and hand it back on destroy. It moves
-	 * focus to the first actionable child — the least destructive action is
-	 * first in the DOM by convention — and reports Escape, plus a backdrop
-	 * click when the caller opts in, through `onClose`. Callers mark the page
-	 * behind it `inert` so the dialog is the only thing reachable.
-	 */
 	let {
 		onClose,
 		backdropClose = false,
@@ -30,8 +20,6 @@
 
 	onMount(() => {
 		returnFocus = document.activeElement as HTMLElement | null;
-		// Deferred a microtask so the browser is done placing the dialog before
-		// focus moves into it.
 		queueMicrotask(() => backdrop?.querySelector<HTMLElement>(FOCUSABLE)?.focus());
 		return () => returnFocus?.focus();
 	});
@@ -48,8 +36,6 @@
 	}
 </script>
 
-<!-- Keyboard dismissal lives on svelte:window: an element-level handler would
-     miss key presses once focus leaves the dialog. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="backdrop" bind:this={backdrop} onclick={handleBackdropClick}>

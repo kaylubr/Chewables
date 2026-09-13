@@ -103,23 +103,11 @@ export async function deletePhoto(input: {
   await store.delete(photo.storageKey);
 }
 
-/**
- * The storage keys for every photo a user owns. Account deletion needs these
- * before the user row goes away, because the photo rows cascade with it and
- * take the keys with them.
- */
 export async function listUserStorageKeys(userId: string): Promise<string[]> {
   const rows = await PhotoRepo.findByUserId(userId);
   return rows.map((row) => row.storageKey);
 }
 
-/**
- * Delete stored objects, tolerating individual failures.
- *
- * Callers use this after the owning rows are already gone (ADR 0006: row
- * first, then object), so a failure only leaves an orphaned file that no user
- * can reach — worth logging, not worth failing a completed operation over.
- */
 export async function deleteStoredObjects(
   keys: string[],
   store: Storage = storage,

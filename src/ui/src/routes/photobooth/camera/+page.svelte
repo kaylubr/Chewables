@@ -37,9 +37,7 @@
 		}
 		if (videoEl) {
 			videoEl.srcObject = camera.stream;
-			await videoEl.play().catch(() => {
-				/* user gesture will resume if autoplay blocked */
-			});
+			await videoEl.play().catch(() => {});
 		}
 		status = 'ready';
 	}

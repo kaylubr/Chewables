@@ -1,14 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { config } from '../config.js';
 
-/**
- * Remembers which address an email change started from, in the browser that
- * requested it. Written when the change is initiated and read when it
- * completes, so "the change finished" can be proven from a signed
- * server-issued value rather than trusted from a query parameter.
- */
 const COOKIE_NAME = 'chewables.email_change';
-/** Matches Better Auth's `emailVerification.expiresIn` default (1 hour). */
 const TTL_MS = 60 * 60 * 1000;
 
 export function emailChangeCookieName(): string {
@@ -37,7 +30,6 @@ export function emailChangeCookieOptions(): {
 	};
 }
 
-/** The address a change started from, or null when the cookie is absent or forged. */
 export function readEmailChangeCookie(cookieHeader: string | undefined): string | null {
 	const raw = cookieValue(cookieHeader, COOKIE_NAME);
 	if (!raw) return null;

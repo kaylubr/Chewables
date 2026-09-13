@@ -1,6 +1,3 @@
-/**
- * Webcam helpers: permission request and error classification.
- */
 import type { BoothSession } from './session';
 
 export type CameraErrorKind =
@@ -60,10 +57,6 @@ export type CameraSession = {
 	stop: () => void;
 };
 
-/**
- * Request webcam access. Returns a stream plus a stop function.
- * Caller is responsible for stopping the stream on unmount.
- */
 export async function startCamera(): Promise<CameraSession> {
 	const stream = await navigator.mediaDevices.getUserMedia({
 		video: { width: { ideal: 1280 }, height: { ideal: 720 } },

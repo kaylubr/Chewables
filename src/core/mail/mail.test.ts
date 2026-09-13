@@ -50,7 +50,6 @@ describe("undeliverable addresses", () => {
 
 	it("allows a deliverable address", () => {
 		expect(isUndeliverable("someone@gmail.com")).toBe(false);
-		// Suffix matches must not catch a domain that merely contains the word.
 		expect(isUndeliverable("someone@notexample.com")).toBe(false);
 		expect(isUndeliverable("someone@example.company")).toBe(false);
 	});

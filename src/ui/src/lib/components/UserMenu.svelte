@@ -2,11 +2,6 @@
 	import type { AuthUser } from '@chewable/shared';
 	import Avatar from './Avatar.svelte';
 
-	/**
-	 * Account menu: the profile photo as a button that opens Profile / Settings /
-	 * Log out. Closes on outside click, Escape (focus returns to the trigger), and
-	 * after choosing an item.
-	 */
 	let { user, onSignOut }: { user: AuthUser; onSignOut: () => void } = $props();
 
 	let open = $state(false);

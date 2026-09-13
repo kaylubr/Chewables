@@ -1,11 +1,3 @@
-/**
- * SPA-side helpers for Better-Auth Google sign-in.
- *
- * Better-Auth handles the OAuth state + callback and sets the session cookie
- * itself. The SPA POSTs to the backend sign-in endpoint and runs the Google
- * round-trip in a popup window; after the callback the popup posts the session
- * back to the opener, which reads the user via GET /api/auth/me.
- */
 import { PUBLIC_API_BASE } from '$env/static/public';
 import type { AuthUser } from '@chewable/shared';
 import { ApiError } from '../api/client';
@@ -23,14 +15,9 @@ export type GoogleAuthResult =
 
 export interface GoogleAuthController {
 	result: Promise<GoogleAuthResult>;
-	/** Close the popup and settle the result as 'closed'. */
 	cancel: () => void;
 }
 
-/**
- * Start a Google sign-in: POST /sign-in/social and return the provider URL the
- * browser should be redirected to.
- */
 export async function googleSignInUrl(next?: string, origin?: string): Promise<string> {
 	const spaOrigin = origin ?? (typeof window !== 'undefined' ? window.location.origin : PUBLIC_API_BASE);
 	const callbackURL = `${spaOrigin}/auth-popup.html?api=${encodeURIComponent(PUBLIC_API_BASE)}&next=${encodeURIComponent(next ?? '/profile')}`;
@@ -50,7 +37,6 @@ export async function googleSignInUrl(next?: string, origin?: string): Promise<s
 			const body = await res.json();
 			if (typeof body.message === 'string') detail = body.message;
 		} catch {
-			/* keep statusText */
 		}
 		throw new ApiError(res.status, detail);
 	}
@@ -58,12 +44,6 @@ export async function googleSignInUrl(next?: string, origin?: string): Promise<s
 	return data.url ?? '';
 }
 
-/**
- * Size the popup and center it on the screen containing the opener. Browsers
- * otherwise drop script-opened windows near the top-left of the screen. Must
- * run while the popup is still a same-origin blank page, before it navigates
- * to the provider; some browsers ignore move/resize, which is fine.
- */
 function centerPopup(popup: Window) {
 	try {
 		popup.resizeTo(520, 620);
@@ -71,16 +51,9 @@ function centerPopup(popup: Window) {
 		const y = popup.screenY + Math.round((popup.screen.availHeight - 620) / 2);
 		popup.moveTo(x, y);
 	} catch {
-		/* positioning is best-effort */
 	}
 }
 
-/**
- * Run a Google sign-in in a popup window. Call synchronously from a click
- * handler so the popup is not blocked; the result settles when the popup's
- * callback page posts back, the popup is closed, or the popup is blocked
- * (caller can then fall back to a full-page redirect with the returned url).
- */
 export function startGoogleSignIn(next?: string): GoogleAuthController {
 	const popup = window.open('', POPUP_NAME, POPUP_FEATURES);
 	if (popup) {

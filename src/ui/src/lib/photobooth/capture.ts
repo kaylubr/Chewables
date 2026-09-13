@@ -1,43 +1,22 @@
-/**
- * Photobooth capture controller.
- *
- * Drives the timed multi-shot capture: a 5-second countdown precedes each
- * shot, and after the frame's photoCount is reached the session moves to
- * composing. The controller is deliberately injectable — the camera page
- * feeds it a live <video> element, while tests feed it fakes — so the
- * countdown/transition/capture-count logic is exercised without a camera.
- */
 import type { FrameDefinition } from '../frames/types';
 import type { PhotoCapture } from './session';
 
 export const COUNTDOWN_SECONDS = 5;
 
 export interface CaptureDeps {
-	/** Snapshot the current video frame and resolve with a data URL. */
 	snap(): Promise<string> | string;
 }
 
 export interface CaptureController {
-	/** Number of shots captured so far. */
 	shots: number;
-	/** Seconds remaining in the current countdown. */
 	countdown: number;
-	/** True while a countdown is ticking. */
 	active: boolean;
-	/** Start the capture run (idempotent while active). */
 	start(): void;
-	/** Abort a run in progress. */
 	abort(): void;
-	/** Whether the run has finished all shots. */
 	done: boolean;
-	/** Resolves when the run completes (all shots) or aborts. */
 	finished: Promise<void>;
 }
 
-/**
- * Create a capture controller for a frame.
- * Fires onShot for every captured still.
- */
 export function createCaptureController(
 	frame: FrameDefinition,
 	deps: CaptureDeps,
@@ -75,7 +54,6 @@ export function createCaptureController(
 			onState('countdown');
 			return;
 		}
-		// Countdown reached zero — take the shot.
 		clearTimer();
 		countdown = COUNTDOWN_SECONDS;
 		void takeShot();
@@ -99,7 +77,6 @@ export function createCaptureController(
 			finish();
 			return;
 		}
-		// Start the next countdown.
 		timer = setInterval(tick, intervalMs);
 		onState('countdown');
 	}

@@ -51,9 +51,6 @@ describe("auth endpoints", () => {
 	});
 
 	it("re-sends a verification email with a logged-in session (frontend flow)", async () => {
-		// Reproduces the exact request the browser sends from the photos page:
-		// an AUTOMATICALLY-SIGNED-IN register session cookie is attached, plus
-		// a raw callbackURL pointing at the SPA auth-popup page.
 		const agent = request.agent(app);
 		await agent.post("/api/auth/register").send({
 			email: "resend-session@example.com",
@@ -73,10 +70,6 @@ describe("auth endpoints", () => {
 	});
 
 	it("resends to the session email even when the request body carries a mismatched email", async () => {
-		// Regression guard: Better Auth's own endpoint returns 400 EMAIL_MISMATCH
-		// when a logged-in session posts a different email. Our wrapper routes the
-		// resend to the session user's own address, so a stale client email can
-		// never produce a 400.
 		const agent = request.agent(app);
 		await agent.post("/api/auth/register").send({
 			email: "session-owner@example.com",
@@ -206,7 +199,6 @@ describe("auth endpoints", () => {
 	});
 
 	it("verifies the email via the token endpoint and flips emailVerified", async () => {
-		// Capture the token Better-Auth generates for the verification email.
 		let verifyUrl = "";
 		const sendSpy = vi
 			.spyOn(mail, "sendVerificationEmail")

@@ -37,7 +37,6 @@ function upload(agent: request.Agent) {
 		});
 }
 
-/** A user with no credential account, i.e. what a social-only sign-up looks like. */
 async function dropCredentialAccount() {
 	await db.delete(schema.account).where(eq(schema.account.providerId, "credential"));
 }
@@ -113,9 +112,7 @@ describe("change password", () => {
 		});
 		expect(resp.status).toBe(200);
 
-		// The browser that made the change survives it...
 		expect((await agent.get("/api/auth/me")).status).toBe(200);
-		// ...and the new password is the one that works.
 		const login = await request(app).post("/api/auth/login").send({
 			username: "user",
 			password: "new-password-123",
@@ -230,7 +227,6 @@ describe("change email", () => {
 		expect(verifySpy).not.toHaveBeenCalled();
 		expect(tokenFromUrl(newEmailUrl)).toBeTruthy();
 
-		// The address has NOT moved yet — it waits for the link.
 		expect((await agent.get("/api/auth/me")).body.email).toBe("user@example.com");
 	});
 
@@ -273,8 +269,6 @@ describe("change email", () => {
 		const resp = await agent.post("/api/auth/change-email").send({
 			newEmail: "taken@example.com",
 		});
-		// Better Auth hides enumeration behind a success response; the UI must
-		// therefore never claim the email actually changed.
 		expect(resp.status).toBe(200);
 		expect(resp.body.status).toBe(true);
 		expect(newSpy).not.toHaveBeenCalled();
@@ -334,7 +328,6 @@ describe("confirm email change", () => {
 	});
 
 	it("does not revoke anything for a bare visit without a change in flight", async () => {
-		// Landing on /settings?email_changed=1 by hand must be inert.
 		const agent = await registerAgent();
 		const other = request.agent(app);
 		await other.post("/api/auth/login").send({
@@ -418,14 +411,11 @@ describe("delete account", () => {
 		});
 		expect(resp.status).toBe(200);
 
-		// Rows go first and cascade with the user (ADR 0006), so the keys were
-		// collected before the delete and the objects are removed afterwards.
 		expect(await db.select().from(schema.users)).toHaveLength(0);
 		expect(await db.select().from(schema.photos)).toHaveLength(0);
 		expect(await db.select().from(schema.session)).toHaveLength(0);
 		expect(deleteSpy).toHaveBeenCalledWith(storageKey);
 
-		// The session is gone with the account.
 		expect((await agent.get("/api/auth/me")).status).toBe(401);
 		await expect(
 			request(app).post("/api/auth/login").send({
@@ -447,8 +437,6 @@ describe("delete account", () => {
 			username: "user",
 			password: "password123",
 		});
-		// The visible state is authoritative: the account is deleted and the
-		// failure only leaves an orphaned object nobody can reach.
 		expect(resp.status).toBe(200);
 		expect(await db.select().from(schema.users)).toHaveLength(0);
 		expect(await db.select().from(schema.photos)).toHaveLength(0);
@@ -465,8 +453,6 @@ describe("delete account", () => {
 	});
 
 	it("asks for a fresh sign-in when the session is stale", async () => {
-		// Better Auth owns the freshness rule; this pins the translation of its
-		// SESSION_EXPIRED into a detail the page can act on.
 		const user = {
 			id: "someone",
 			email: "someone@example.com",

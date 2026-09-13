@@ -10,7 +10,6 @@
 		username: string;
 		size?: string;
 		alt?: string;
-		/** Lets a large avatar scale its initials instead of keeping them tiny. */
 		initialsSize?: string;
 	} = $props();
 

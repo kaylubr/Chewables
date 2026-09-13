@@ -1,12 +1,3 @@
-/**
- * The account module's failure vocabulary.
- *
- * `auth.controller.ts` maps each class to one HTTP outcome and the tests
- * assert on them, so this taxonomy is the surface around the account
- * operations — kept apart from the Better-Auth adapter that reports the
- * underlying error codes.
- */
-
 export class EmailTakenError extends Error {
 	override name = 'EmailTakenError';
 }

@@ -1,12 +1,6 @@
 <script lang="ts">
 	import Modal from '$lib/components/Modal.svelte';
 
-	/**
-	 * The prompt shown while a popup Google sign-in is in progress.
-	 *
-	 * The provider button itself stays on the login and register pages, so its
-	 * brand mark is not abstracted away from them.
-	 */
 	let { onCancel }: { onCancel: () => void } = $props();
 </script>
 

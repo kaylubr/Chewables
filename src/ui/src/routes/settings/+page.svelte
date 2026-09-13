@@ -10,10 +10,6 @@
 	import { auth } from '$lib/auth/store.svelte';
 	import { toastStore } from '$lib/toasts/toasts.svelte';
 
-	/**
-	 * The action waiting on confirmation. Each one carries what it needs, so the
-	 * dialog can describe it and then run it without re-reading the form.
-	 */
 	type Pending =
 		| { kind: 'sign-out' }
 		| { kind: 'resend-verification' }
@@ -22,21 +18,16 @@
 		| { kind: 'set-password'; newPassword: string }
 		| { kind: 'delete-account' };
 
-	// Snapshot of the session user for the template, so Svelte can narrow it
-	// after the auth gate.
 	let user = $state<AuthUser | null>(null);
 	let pending = $state<Pending | null>(null);
 	let running = $state(false);
 
-	// Email
 	let newEmail = $state('');
 
-	// Password
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
 
-	// Delete account
 	let confirmUsername = $state('');
 	let deletePassword = $state('');
 	let deleteError = $state('');
@@ -114,11 +105,6 @@
 		user = auth.user;
 	});
 
-	/**
-	 * The landing page for a confirmed email change. The server decides whether
-	 * anything actually completed — a bare visit to this URL is inert — and
-	 * drops the user's other sessions when it did.
-	 */
 	async function confirmEmailChange() {
 		try {
 			const { changed } = await api.confirmEmailChange();
@@ -131,7 +117,6 @@
 				e instanceof ApiError ? e.message : 'Could not confirm your email change.',
 			);
 		} finally {
-			// Drop the query param so a reload doesn't replay the confirmation.
 			goto('/settings', { replaceState: true });
 		}
 	}
@@ -210,10 +195,6 @@
 				case 'change-email':
 					await api.changeEmail(action.newEmail);
 					newEmail = '';
-					// Better Auth answers success even when the address is
-					// already taken, and nothing moves until the link is
-					// followed — so this can only ask the user to check their
-					// inbox.
 					toastStore.success('Check your inbox to verify your new email.');
 					break;
 				case 'change-password':
@@ -243,8 +224,6 @@
 			pending = null;
 		} catch (e) {
 			pending = null;
-			// Deletion keeps its error beside the fields the user has to fix;
-			// everything else has no form on screen to correct.
 			if (action.kind === 'delete-account') {
 				deleteError = message(e, describe(action).failure);
 			} else {
